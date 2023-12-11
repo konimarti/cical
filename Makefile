@@ -6,7 +6,7 @@ INCLUDE+=-Iinclude
 PREFIX?=/usr/local
 BINDIR?=$(PREFIX)/bin
 MANDIR?=$(PREFIX)/share/man
-OUTDIR=.build
+OUTDIR=build
 SCDOC=scdoc
 .DEFAULT_GOAL=all
 
