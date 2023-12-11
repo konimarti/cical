@@ -8,58 +8,162 @@
 #include <stdlib.h>
 #include <string.h>
 
-enum comp_type {
-	UNKNOWN,
-	VCALENDAR,
-	VEVENT,
-	VTODO,
-	VJOURNAL,
-	VFREEBUSY,
-	VTIMEZONE,
-	VALARM,
-	STANDARD,
-	DAYLIGHT
-};
-
-enum prop_type {
-	CICAL_PROPERTY_CALSCALE,
-	CICAL_PROPERTY_METHOD,
-	CICAL_PROPERTY_PRODID,
-	CICAL_PROPERTY_VERSION,
-	// TODO
-};
-
-struct parameter {
-	char *name;
-	char *value;
-	struct parameter *next;
-};
+/* enum cical_type { */
+/* 	CICAL_UNKNOWN, */
+/*  */
+/* 	// iCalendar stream */
+/* 	CICAL_OBJECT_VCALENDAR, */
+/*  */
+/* 	// component types */
+/* 	CICAL_COMPONENT_VEVENT, */
+/* 	CICAL_COMPONENT_VTODO, */
+/* 	CICAL_COMPONENT_VJOURNAL, */
+/* 	CICAL_COMPONENT_VFREEBUSY, */
+/* 	CICAL_COMPONENT_VTIMEZONE, */
+/* 	CICAL_COMPONENT_VALARM, */
+/* 	CICAL_COMPONENT_STANDARD, */
+/* 	CICAL_COMPONENT_DAYLIGHT, */
+/*  */
+/* 	// property types */
+/* 	CICAL_PROPERTY_CALSCALE, */
+/* 	CICAL_PROPERTY_METHOD, */
+/* 	CICAL_PROPERTY_PRODID, */
+/* 	CICAL_PROPERTY_VERSION, */
+/* 	// TODO */
+/* }; */
 
 struct property {
-	enum prop_type type;
-	struct parameter *param;
+	char *name;
+	char *param;
+	char *value;
+	struct property *next;
 };
 
-struct component {
-	enum comp_type type;
-	struct property *prop;
-	struct component *comp;
-};
-
-enum comp_type find_comp_type(const char type[static 1]) {
-	// TODO
-	printf("   type: %s\n", type);
-	return UNKNOWN;
+char *dup(const char *c) {
+	char *dup = malloc(strlen(c) + 1);
+	if (dup) {
+		strcpy(dup, c);
+	}
+	return dup;
 }
 
-struct component *init_component(const char *type) {
+struct property *init_property(const char *name, const char *param,
+			       const char *value) {
+	struct property *p = malloc(sizeof(struct property));
+	if (!p) {
+		perror("failed to allocate property memory");
+		exit(EXIT_FAILURE);
+	}
+
+	p->name = dup(name);
+	p->param = dup(param);
+	p->value = dup(value);
+	p->next = (void *)0;
+	return p;
+}
+
+void destroy_property(struct property *p) {
+	if (!p) return;
+
+	if (p->name) free(p->name);
+	if (p->param) free(p->param);
+	if (p->value) free(p->value);
+
+	struct property *ptr = p->next, *tmp;
+	while (ptr) {
+		tmp = ptr->next;
+		free(ptr);
+		ptr = tmp;
+	}
+	free(p);
+}
+
+struct component {
+	char *name;
+	struct property *prop;
+	struct component *next;
+};
+
+struct component *init_component(const char *name) {
 	struct component *c = malloc(sizeof(struct component));
 	if (!c) {
 		perror("failed to allocate compnent memory");
 		exit(EXIT_FAILURE);
 	}
-	c->type = find_comp_type(type);
+	c->name = dup(name);
+	c->prop = (void *)0;
+	c->next = (void *)0;
 	return c;
+}
+
+void destroy_component(struct component *c) {
+	if (!c) return;
+
+	if (c->name) {
+		free(c->name);
+	}
+
+	if (c->prop) {
+		destroy_property(c->prop);
+	}
+
+	if (c->next) {
+		struct component *ptr = c->next, *tmp;
+		while (ptr) {
+			tmp = ptr->next;
+			free(ptr);
+			ptr = tmp;
+		}
+	}
+
+	free(c);
+}
+
+// prepend component c to dst in O(1)
+void add_component(struct component *dst, struct component *c) {
+	if (!dst || !c) return;
+
+	if (dst->next == (void *)0) {
+		dst->next = c;
+	} else {
+		c->next = dst->next;
+		dst->next = c;
+	}
+}
+
+// prepend property p to component c in O(1)
+void add_property(struct component *c, struct property *p) {
+	if (!c || !p) return;
+
+	if (c->prop == (void *)0) {
+		c->prop = p;
+	} else {
+		p->next = c->prop;
+		c->prop = p;
+	}
+}
+
+void print_component(struct component *c, int depth) {
+	if (!c) return;
+
+	char indent[32];
+	snprintf(indent, 32, "%*d>", depth * 2, depth);
+
+	printf("%s name: %s\n", indent, c->name);
+	if (c->prop) {
+		printf("%s prop:\n", indent);
+		struct property *ptr = c->prop;
+		while (ptr) {
+			printf("%s     name=%s param=%s value=%s\n", indent,
+			       ptr->name, ptr->param, ptr->value);
+			ptr = ptr->next;
+		}
+	} else {
+		printf("%s prop: (no properties)\n", indent);
+	}
+	if (c->next) {
+		print_component(c->next, ++depth);
+	}
 }
 
 #define MAX_STACK_SIZE 100
@@ -89,11 +193,6 @@ void stack_push(struct stack *s, struct component *c) {
 
 struct component *stack_pop(struct stack *s) {
 	if (s) return s->buf[(s->top)--];
-	return (void *)0;
-}
-
-struct component *stack_top(struct stack *s) {
-	if (s) return s->buf[s->top];
 	return (void *)0;
 }
 
@@ -188,17 +287,37 @@ void parse_property(char *const buf,
 	}
 
 	*ptr = '\0';
+	++ptr;
+	while (isspace(*ptr)) {
+		++ptr;
+	}
+
+	char *param = strchr(buf, ';');
+	if (param) {
+		*param = '\0';
+		++param;
+		while (isspace(*param)) {
+			++param;
+		}
+	} else {
+		param = ptr + strlen(ptr);
+	}
+
 	printf("property-name : %s\n", buf);
-	printf("property-value: %s\n\n", ptr + 1);
+	if (param) printf("property-param: %s\n", param);
+	printf("property-value: %s\n\n", ptr);
+
+	struct property *p = init_property(buf, param, ptr);
+	add_property(c, p);
 }
 
 int main(void) {
 	char buf[BUF_SIZE];
 
-	struct component *comps[256];
-	size_t comps_index = 0;
+	struct component *stream[256];
+	size_t n = 0;
 
-	struct component *top;
+	struct component *top, *tmp;
 
 	struct stack *s = init_stack();
 	struct reader *r = init_reader(stdin);
@@ -215,8 +334,20 @@ int main(void) {
 
 		if (strncmp(buf, "END:", 4) == 0) {
 			printf("popped: %s\n", buf + 4);
-			comps[comps_index++] = stack_pop(s);
-			top = (void *)0;
+			if (stack_empty(s)) {
+				perror("trying to pop empty stack");
+				exit(EXIT_FAILURE);
+			}
+			tmp = stack_pop(s);
+			if (stack_empty(s)) {
+				top = (void *)0;
+				stream[n++] = tmp;
+			} else {
+				top = stack_pop(s);
+				add_component(top, tmp);
+				printf("pushded again: %s\n", top->name);
+				stack_push(s, top);
+			}
 			continue;
 		}
 
@@ -225,8 +356,10 @@ int main(void) {
 		}
 	}
 
-	for (size_t i = 0; i < comps_index; i++) {
-		printf("component %d\n", comps[i]->type);
+	for (size_t i = 0; i < n; i++) {
+		printf("object: %ld\n", i);
+		print_component(stream[i], 0);
+		destroy_component(stream[i]);
 	}
 
 	destroy_reader(r);
