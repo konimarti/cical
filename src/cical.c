@@ -3,34 +3,28 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/* enum cical_type { */
-/* 	CICAL_UNKNOWN, */
-/*  */
-/* 	// iCalendar stream */
-/* 	CICAL_OBJECT_VCALENDAR, */
-/*  */
-/* 	// component types */
-/* 	CICAL_COMPONENT_VEVENT, */
-/* 	CICAL_COMPONENT_VTODO, */
-/* 	CICAL_COMPONENT_VJOURNAL, */
-/* 	CICAL_COMPONENT_VFREEBUSY, */
-/* 	CICAL_COMPONENT_VTIMEZONE, */
-/* 	CICAL_COMPONENT_VALARM, */
-/* 	CICAL_COMPONENT_STANDARD, */
-/* 	CICAL_COMPONENT_DAYLIGHT, */
-/*  */
-/* 	// property types */
-/* 	CICAL_PROPERTY_CALSCALE, */
-/* 	CICAL_PROPERTY_METHOD, */
-/* 	CICAL_PROPERTY_PRODID, */
-/* 	CICAL_PROPERTY_VERSION, */
-/* 	// TODO */
-/* }; */
+#ifndef VERSION
+#define VERSION "no_version_set"
+#endif
+
+static void version() { printf("version: %s\n", VERSION); }
+
+static void usage(void) {
+	puts("usage: cical [-h] [-v] [-f FILE]");
+	puts("");
+	puts("Parse iCalendar streams.");
+	puts("");
+	puts("options:");
+	puts("  -h       show this help message");
+	puts("  -v 	 show version");
+	puts("  -f FILE  read from filename (default stdin)");
+}
 
 struct property {
 	char *name;
@@ -39,7 +33,7 @@ struct property {
 	struct property *next;
 };
 
-char *dup(const char *c) {
+static char *dup(const char *c) {
 	char *dup = malloc(strlen(c) + 1);
 	if (dup) {
 		strcpy(dup, c);
@@ -87,7 +81,7 @@ struct component {
 struct component *init_component(const char *name) {
 	struct component *c = malloc(sizeof(struct component));
 	if (!c) {
-		perror("failed to allocate compnent memory");
+		perror("failed to allocate component memory");
 		exit(EXIT_FAILURE);
 	}
 	c->name = dup(name);
@@ -311,7 +305,7 @@ void parse_property(char *const buf,
 	add_property(c, p);
 }
 
-int main(void) {
+void parse_icalendar_stream(FILE *f) {
 	char buf[BUF_SIZE];
 
 	struct component *stream[256];
@@ -320,7 +314,7 @@ int main(void) {
 	struct component *top, *tmp;
 
 	struct stack *s = init_stack();
-	struct reader *r = init_reader(stdin);
+	struct reader *r = init_reader(f);
 
 	while (reader_getline(sizeof(buf), buf, r)) {
 		/* printf("read: %s\n", buf); */
@@ -364,4 +358,42 @@ int main(void) {
 
 	destroy_reader(r);
 	destroy_stack(s);
+}
+
+int main(int argc, char *argv[]) {
+	const char *filename = (void *)0;
+	FILE *in_file = (void *)0;
+	int c;
+
+	while ((c = getopt(argc, argv, "hvf:")) != -1) {
+		errno = 0;
+		switch (c) {
+			case 'f':
+				filename = optarg;
+				break;
+			case 'v':
+				version();
+				return 1;
+			default:
+				usage();
+				return 1;
+		}
+	}
+	if (optind < argc) {
+		fprintf(stderr, "%s: unexpected argument -- '%s'\n", argv[0],
+			argv[optind]);
+		usage();
+		return 1;
+	}
+	if (filename == NULL || !strcmp(filename, "-")) {
+		in_file = stdin;
+	} else {
+		in_file = fopen(filename, "r");
+		if (!in_file) {
+			perror("error: cannot open file");
+			return 1;
+		}
+	}
+	parse_icalendar_stream(in_file);
+	return 0;
 }

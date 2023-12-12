@@ -1,6 +1,6 @@
 VERSION=0.1.0
 CFLAGS?=-g
-MAINFLAGS:=-DVERSION="$(VERSION)" -Wall -Wextra -Werror -Wno-unused-parameter
+MAINFLAGS:=-DVERSION='"$(VERSION)"' -Wall -Wextra -Werror -Wno-unused-parameter
 LDFLAGS+=-static
 INCLUDE+=-Iinclude
 PREFIX?=/usr/local
