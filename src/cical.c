@@ -63,12 +63,10 @@ void destroy_property(struct property *p) {
 	if (p->param) free(p->param);
 	if (p->value) free(p->value);
 
-	struct property *ptr = p->next, *tmp;
-	while (ptr) {
-		tmp = ptr->next;
-		free(ptr);
-		ptr = tmp;
+	if (p->next) {
+		destroy_property(p->next);
 	}
+
 	free(p);
 }
 
@@ -102,19 +100,14 @@ void destroy_component(struct component *c) {
 	}
 
 	if (c->next) {
-		struct component *ptr = c->next, *tmp;
-		while (ptr) {
-			tmp = ptr->next;
-			free(ptr);
-			ptr = tmp;
-		}
+		destroy_component(c->next);
 	}
 
 	free(c);
 }
 
 // prepend component c to dst in O(1)
-void add_component(struct component *dst, struct component *c) {
+void component_add(struct component *dst, struct component *c) {
 	if (!dst || !c) return;
 
 	if (dst->next == (void *)0) {
@@ -126,7 +119,7 @@ void add_component(struct component *dst, struct component *c) {
 }
 
 // prepend property p to component c in O(1)
-void add_property(struct component *c, struct property *p) {
+void component_add_property(struct component *c, struct property *p) {
 	if (!c || !p) return;
 
 	if (c->prop == (void *)0) {
@@ -137,7 +130,7 @@ void add_property(struct component *c, struct property *p) {
 	}
 }
 
-void print_component(struct component *c, int depth) {
+void component_print(struct component *c, int depth) {
 	if (!c) return;
 
 	char indent[32];
@@ -156,7 +149,7 @@ void print_component(struct component *c, int depth) {
 		printf("%s prop: (no properties)\n", indent);
 	}
 	if (c->next) {
-		print_component(c->next, ++depth);
+		component_print(c->next, ++depth);
 	}
 }
 
@@ -218,7 +211,7 @@ void destroy_reader(struct reader *r) {
 	if (r) free(r);
 }
 
-char *endline(char *buf) {
+static char *endline(char *buf) {
 	char *ptr = strstr(buf, "\r\n");
 	if (ptr == (void *)0) {
 		ptr = strchr(buf, '\n');
@@ -298,11 +291,11 @@ void parse_property(char *const buf,
 	}
 
 	printf("property-name : %s\n", buf);
-	if (param) printf("property-param: %s\n", param);
+	printf("property-param: %s\n", param);
 	printf("property-value: %s\n\n", ptr);
 
 	struct property *p = init_property(buf, param, ptr);
-	add_property(c, p);
+	component_add_property(c, p);
 }
 
 void parse_icalendar_stream(FILE *f) {
@@ -338,8 +331,8 @@ void parse_icalendar_stream(FILE *f) {
 				stream[n++] = tmp;
 			} else {
 				top = stack_pop(s);
-				add_component(top, tmp);
-				printf("pushded again: %s\n", top->name);
+				component_add(top, tmp);
+				printf("pushed again: %s\n", top->name);
 				stack_push(s, top);
 			}
 			continue;
@@ -352,7 +345,7 @@ void parse_icalendar_stream(FILE *f) {
 
 	for (size_t i = 0; i < n; i++) {
 		printf("object: %ld\n", i);
-		print_component(stream[i], 0);
+		component_print(stream[i], 0);
 		destroy_component(stream[i]);
 	}
 
