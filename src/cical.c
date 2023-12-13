@@ -26,13 +26,6 @@ static void usage(void) {
 	puts("  -f FILE  read from filename (default stdin)");
 }
 
-struct property {
-	char *name;
-	char *param;
-	char *value;
-	struct property *next;
-};
-
 static char *dup(const char *c) {
 	char *dup = malloc(strlen(c) + 1);
 	if (dup) {
@@ -40,6 +33,13 @@ static char *dup(const char *c) {
 	}
 	return dup;
 }
+
+struct property {
+	char *name;
+	char *param;
+	char *value;
+	struct property *next;
+};
 
 struct property *init_property(const char *name, const char *param,
 			       const char *value) {
@@ -110,24 +110,18 @@ void destroy_component(struct component *c) {
 void component_add(struct component *dst, struct component *c) {
 	if (!dst || !c) return;
 
-	if (dst->next == (void *)0) {
-		dst->next = c;
-	} else {
-		c->next = dst->next;
-		dst->next = c;
-	}
+	if (dst->next) c->next = dst->next;
+
+	dst->next = c;
 }
 
 // prepend property p to component c in O(1)
 void component_add_property(struct component *c, struct property *p) {
 	if (!c || !p) return;
 
-	if (c->prop == (void *)0) {
-		c->prop = p;
-	} else {
-		p->next = c->prop;
-		c->prop = p;
-	}
+	if (c->prop) p->next = c->prop;
+
+	c->prop = p;
 }
 
 void component_print(struct component *c, int depth) {
@@ -153,7 +147,7 @@ void component_print(struct component *c, int depth) {
 	}
 }
 
-#define MAX_STACK_SIZE 100
+#define MAX_STACK_SIZE 32
 
 struct stack {
 	struct component *buf[MAX_STACK_SIZE];
@@ -213,18 +207,13 @@ void destroy_reader(struct reader *r) {
 
 static char *endline(char *buf) {
 	char *ptr = strstr(buf, "\r\n");
-	if (ptr == (void *)0) {
-		ptr = strchr(buf, '\n');
-		if (!ptr) {
-			return buf + strlen(buf);
-		}
-	}
+	if (!ptr) ptr = strchr(buf, '\n');
+	if (!ptr) ptr = buf + strlen(buf);
 	return ptr;
 }
 
 size_t reader_getline(size_t n, char buf[n], struct reader *r) {
-	if (!r) return 0;
-	if (feof(r->in)) return 0;
+	if (!r || (r && feof(r->in))) return 0;
 
 	int ch;
 	char *ptr = r->buf;
@@ -247,55 +236,50 @@ size_t reader_getline(size_t n, char buf[n], struct reader *r) {
 		ptr = endline(ptr);
 	}
 
-	ptr = endline(r->buf);
-	*ptr = '\0';
+	*endline(r->buf) = '\0';
 
-	strcpy(buf, r->buf);
+	strncpy(buf, r->buf, n);
 	return strlen(buf);
 }
 
-void parse_property(char *const buf,
-		    struct component *const c __attribute__((unused))) {
-	char *ptr = buf;
-	bool in_quotes = false;
+void parse_property(char *const buf, struct component *const c) {
+	char *ptr = buf, *t, *param;
+	bool has_param = false;
 
-	while (!in_quotes && *ptr != ':') {
+	while (*ptr != ':') {
 		switch (*ptr) {
 			case '\0':
 				fprintf(stderr,
 					"no valid property found in: %s\n",
 					buf);
 				return;
+			case ';':
+				has_param = true;
+				break;
 			case '"':
-				in_quotes = !in_quotes;
+				t = strchr(ptr + 1, '"');
+				if (t) ptr = t;
 				break;
 		}
 		ptr++;
 	}
-
 	*ptr = '\0';
-	++ptr;
-	while (isspace(*ptr)) {
-		++ptr;
-	}
 
-	char *param = strchr(buf, ';');
-	if (param) {
-		*param = '\0';
-		++param;
-		while (isspace(*param)) {
-			++param;
-		}
-	} else {
+	while (isspace(*(++ptr)))
+		;
+
+	if (has_param) {
+		t = strchr(buf, ';');
+		*t = '\0';
+		param = ++t;
+	} else
 		param = ptr + strlen(ptr);
-	}
 
 	printf("property-name : %s\n", buf);
 	printf("property-param: %s\n", param);
 	printf("property-value: %s\n\n", ptr);
 
-	struct property *p = init_property(buf, param, ptr);
-	component_add_property(c, p);
+	component_add_property(c, init_property(buf, param, ptr));
 }
 
 void parse_icalendar_stream(FILE *f) {
@@ -378,7 +362,7 @@ int main(int argc, char *argv[]) {
 		usage();
 		return 1;
 	}
-	if (filename == NULL || !strcmp(filename, "-")) {
+	if (!filename || !strcmp(filename, "-")) {
 		in_file = stdin;
 	} else {
 		in_file = fopen(filename, "r");
