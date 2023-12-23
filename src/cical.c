@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 /* Copyright (c) 2023 Koni Marti */
 
-#include <cical_time.h>
+#include <cical.h>
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -9,10 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifndef VERSION
-#define VERSION "no_version_set"
-#endif
 
 static void version() { printf("version: %s\n", VERSION); }
 
@@ -139,9 +135,10 @@ void component_print(struct component *c, int depth) {
 			printf("%s     name=%s param=%s value=%s\n", indent,
 			       ptr->name, ptr->param, ptr->value);
 			if (strncmp(ptr->name, "DT", 2) == 0) {
-				struct tm time = {0};
-				parse_rfc5545_time(ptr->value, &time);
-				printf("time parsed: %s", asctime(&time));
+				time_t t = 0;
+				const char *parser = ptr->value;
+				parser = parse_rfc5545_time(parser, &t);
+				TRACE_PRINTLN("time parsed: %s", ctime(&t));
 			}
 			ptr = ptr->next;
 		}
@@ -281,11 +278,9 @@ void parse_property(char *const buf, struct component *const c) {
 	} else
 		param = ptr + strlen(ptr);
 
-#ifdef DEBUG_PRINT
-	printf("property-name : '%s'\n", buf);
-	printf("property-param: '%s'\n", param);
-	printf("property-value: '%s'\n\n", ptr);
-#endif
+	TRACE_PRINTLN("property-name : '%s'", buf);
+	TRACE_PRINTLN("property-param: '%s'", param);
+	TRACE_PRINTLN("property-value: '%s'\n", ptr);
 
 	component_add_property(c, init_property(buf, param, ptr));
 }
@@ -305,18 +300,14 @@ void parse_icalendar_stream(FILE *f) {
 		/* printf("read: %s\n", buf); */
 
 		if (strncmp(buf, "BEGIN:", 6) == 0) {
-#ifdef DEBUG_PRINT
-			printf("pushed: %s\n", buf + 6);
-#endif
+			TRACE_PRINTLN("stack: push: %s", buf + 6);
 			top = init_component(buf + 6);
 			stack_push(s, top);
 			continue;
 		}
 
 		if (strncmp(buf, "END:", 4) == 0) {
-#ifdef DEBUG_PRINT
-			printf("popped: %s\n", buf + 4);
-#endif
+			TRACE_PRINTLN("stack: pop: %s", buf + 4);
 			if (stack_empty(s)) {
 				perror("trying to pop empty stack");
 				exit(EXIT_FAILURE);
@@ -328,9 +319,8 @@ void parse_icalendar_stream(FILE *f) {
 			} else {
 				top = stack_pop(s);
 				component_add(top, tmp);
-#ifdef DEBUG_PRINT
-				printf("pushed again: %s\n", top->name);
-#endif
+				TRACE_PRINTLN("stack: push back: %s",
+					      top->name);
 				stack_push(s, top);
 			}
 			continue;
