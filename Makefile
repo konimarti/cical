@@ -11,7 +11,8 @@ SCDOC=scdoc
 .DEFAULT_GOAL=all
 
 OBJECTS=\
-	$(OUTDIR)/cical.o
+	$(OUTDIR)/cical.o \
+	$(OUTDIR)/cical_time.o \
 
 $(OUTDIR)/%.o: src/%.c
 	@mkdir -p $(OUTDIR)

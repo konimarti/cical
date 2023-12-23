@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 /* Copyright (c) 2023 Koni Marti */
 
+#include <cical_time.h>
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -137,6 +138,11 @@ void component_print(struct component *c, int depth) {
 		while (ptr) {
 			printf("%s     name=%s param=%s value=%s\n", indent,
 			       ptr->name, ptr->param, ptr->value);
+			if (strncmp(ptr->name, "DT", 2) == 0) {
+				struct tm time = {0};
+				parse_rfc5545_time(ptr->value, &time);
+				printf("time parsed: %s", asctime(&time));
+			}
 			ptr = ptr->next;
 		}
 	} else {
@@ -275,9 +281,11 @@ void parse_property(char *const buf, struct component *const c) {
 	} else
 		param = ptr + strlen(ptr);
 
-	printf("property-name : %s\n", buf);
-	printf("property-param: %s\n", param);
-	printf("property-value: %s\n\n", ptr);
+#ifdef DEBUG_PRINT
+	printf("property-name : '%s'\n", buf);
+	printf("property-param: '%s'\n", param);
+	printf("property-value: '%s'\n\n", ptr);
+#endif
 
 	component_add_property(c, init_property(buf, param, ptr));
 }
@@ -297,14 +305,18 @@ void parse_icalendar_stream(FILE *f) {
 		/* printf("read: %s\n", buf); */
 
 		if (strncmp(buf, "BEGIN:", 6) == 0) {
+#ifdef DEBUG_PRINT
 			printf("pushed: %s\n", buf + 6);
+#endif
 			top = init_component(buf + 6);
 			stack_push(s, top);
 			continue;
 		}
 
 		if (strncmp(buf, "END:", 4) == 0) {
+#ifdef DEBUG_PRINT
 			printf("popped: %s\n", buf + 4);
+#endif
 			if (stack_empty(s)) {
 				perror("trying to pop empty stack");
 				exit(EXIT_FAILURE);
@@ -316,7 +328,9 @@ void parse_icalendar_stream(FILE *f) {
 			} else {
 				top = stack_pop(s);
 				component_add(top, tmp);
+#ifdef DEBUG_PRINT
 				printf("pushed again: %s\n", top->name);
+#endif
 				stack_push(s, top);
 			}
 			continue;
