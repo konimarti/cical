@@ -332,9 +332,7 @@ void parse_icalendar_stream(FILE *f) {
 		}
 	}
 
-	for (iterator it = new_iterator(stream); !end(it); it = next(it)) {
-		component_print(current(it), 0);
-	}
+	ITERATE(stream, x) { component_print(current(x), 1); }
 
 	destroy_list(stream);
 

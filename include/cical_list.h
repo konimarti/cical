@@ -21,6 +21,9 @@ void destroy_list(struct list *list);
 void list_add(struct list *list, void *data);
 
 // public list iterator api
+
+#define ITERATE(L, X) for (iterator X = new_iterator(L); !end(X); X = next(X))
+
 typedef struct list iterator;
 iterator new_iterator(struct list *list);
 iterator next(iterator it);
