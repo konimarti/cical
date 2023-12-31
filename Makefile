@@ -14,6 +14,7 @@ OBJECTS=\
 	$(OUTDIR)/cical.o \
 	$(OUTDIR)/cical_time.o \
 	$(OUTDIR)/cical_list.o \
+	$(OUTDIR)/cical_stack.o \
 	$(OUTDIR)/cical_reader.o
 
 $(OUTDIR)/%.o: src/%.c

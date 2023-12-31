@@ -139,41 +139,6 @@ void component_print(struct component *c, int depth) {
 	ITERATE(c->comp, arg) { component_print(current(arg), ++depth); }
 }
 
-#define MAX_STACK_SIZE 32
-
-struct stack {
-	struct component *buf[MAX_STACK_SIZE];
-	int top;
-};
-
-struct stack *init_stack() {
-	struct stack *s = malloc(sizeof(struct stack));
-	if (!s) {
-		perror("stack allocation failed");
-		exit(EXIT_FAILURE);
-	}
-	s->top = -1;
-	return s;
-}
-
-void destroy_stack(struct stack *s) {
-	if (s) free(s);
-}
-
-void stack_push(struct stack *s, struct component *c) {
-	if (s) s->buf[++(s->top)] = c;
-}
-
-struct component *stack_pop(struct stack *s) {
-	if (s) return s->buf[(s->top)--];
-	return (void *)0;
-}
-
-bool stack_empty(struct stack *s) {
-	if (s && s->top < 0) return true;
-	return false;
-}
-
 void parse_property(char *const buf, struct component *const c) {
 	char *ptr = buf, *t, *param;
 	bool has_param = false;
