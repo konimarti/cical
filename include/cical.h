@@ -6,6 +6,7 @@
 #endif
 
 #include <cical_list.h>
+#include <cical_reader.h>
 #include <cical_time.h>
 #include <cical_trace.h>
 
