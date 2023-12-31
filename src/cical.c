@@ -35,7 +35,6 @@ struct property {
 	char *name;
 	char *param;
 	char *value;
-	struct property *next;
 };
 
 struct property *init_property(const char *name, const char *param,
@@ -49,27 +48,22 @@ struct property *init_property(const char *name, const char *param,
 	p->name = dup(name);
 	p->param = dup(param);
 	p->value = dup(value);
-	p->next = (void *)0;
 	return p;
 }
 
-void destroy_property(struct property *p) {
-	if (!p) return;
+void destroy_property(void *arg) {
+	if (!arg) return;
 
+	struct property *p = arg;
 	if (p->name) free(p->name);
 	if (p->param) free(p->param);
 	if (p->value) free(p->value);
-
-	if (p->next) {
-		destroy_property(p->next);
-	}
-
 	free(p);
 }
 
 struct component {
 	char *name;
-	struct property *prop;
+	struct list *prop;
 	struct component *next;
 };
 
@@ -80,8 +74,7 @@ struct component *init_component(const char *name) {
 		exit(EXIT_FAILURE);
 	}
 	c->name = dup(name);
-	c->prop = (void *)0;
-	c->next = (void *)0;
+	c->prop = new_list(destroy_property);
 	return c;
 }
 
@@ -95,7 +88,7 @@ void destroy_component(void *arg) {
 	}
 
 	if (c->prop) {
-		destroy_property(c->prop);
+		destroy_list(c->prop);
 	}
 
 	if (c->next) {
@@ -118,9 +111,7 @@ void component_add(struct component *dst, struct component *c) {
 void component_add_property(struct component *c, struct property *p) {
 	if (!c || !p) return;
 
-	if (c->prop) p->next = c->prop;
-
-	c->prop = p;
+	list_add(c->prop, p);
 }
 
 void component_print(struct component *c, int depth) {
@@ -132,8 +123,8 @@ void component_print(struct component *c, int depth) {
 	printf("%s name: %s\n", indent, c->name);
 	if (c->prop) {
 		printf("%s prop:\n", indent);
-		struct property *ptr = c->prop;
-		while (ptr) {
+		ITERATE(c->prop, arg) {
+			struct property *ptr = current(arg);
 			printf("%s     name=%s param=%s value=%s\n", indent,
 			       ptr->name, ptr->param, ptr->value);
 			if (strncmp(ptr->name, "DT", 2) == 0) {
@@ -142,7 +133,6 @@ void component_print(struct component *c, int depth) {
 				parser = parse_rfc5545_time(parser, &t);
 				TRACE_PRINTLN("time parsed: %s", ctime(&t));
 			}
-			ptr = ptr->next;
 		}
 	} else {
 		printf("%s prop: (no properties)\n", indent);
