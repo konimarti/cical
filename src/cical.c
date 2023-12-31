@@ -64,19 +64,8 @@ void destroy_property(void *arg) {
 struct component {
 	char *name;
 	struct list *prop;
-	struct component *next;
+	struct list *comp;
 };
-
-struct component *init_component(const char *name) {
-	struct component *c = malloc(sizeof(struct component));
-	if (!c) {
-		perror("failed to allocate component memory");
-		exit(EXIT_FAILURE);
-	}
-	c->name = dup(name);
-	c->prop = new_list(destroy_property);
-	return c;
-}
 
 void destroy_component(void *arg) {
 	if (!arg) return;
@@ -91,20 +80,30 @@ void destroy_component(void *arg) {
 		destroy_list(c->prop);
 	}
 
-	if (c->next) {
-		destroy_component(c->next);
+	if (c->comp) {
+		destroy_list(c->comp);
 	}
 
 	free(c);
+}
+
+struct component *init_component(const char *name) {
+	struct component *c = malloc(sizeof(struct component));
+	if (!c) {
+		perror("failed to allocate component memory");
+		exit(EXIT_FAILURE);
+	}
+	c->name = dup(name);
+	c->prop = new_list(destroy_property);
+	c->comp = new_list(destroy_component);
+	return c;
 }
 
 // prepend component c to dst in O(1)
 void component_add(struct component *dst, struct component *c) {
 	if (!dst || !c) return;
 
-	if (dst->next) c->next = dst->next;
-
-	dst->next = c;
+	list_add(dst->comp, c);
 }
 
 // prepend property p to component c in O(1)
@@ -137,9 +136,7 @@ void component_print(struct component *c, int depth) {
 	} else {
 		printf("%s prop: (no properties)\n", indent);
 	}
-	if (c->next) {
-		component_print(c->next, ++depth);
-	}
+	ITERATE(c->comp, arg) { component_print(current(arg), ++depth); }
 }
 
 #define MAX_STACK_SIZE 32
@@ -288,8 +285,6 @@ void parse_icalendar_stream(FILE *f) {
 	struct reader *r = init_reader(f);
 
 	while (reader_getline(sizeof(buf), buf, r)) {
-		/* printf("read: %s\n", buf); */
-
 		if (strncmp(buf, "BEGIN:", 6) == 0) {
 			TRACE_PRINTLN("stack: push: %s", buf + 6);
 			top = init_component(buf + 6);
