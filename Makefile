@@ -13,6 +13,7 @@ SCDOC=scdoc
 OBJECTS=\
 	$(OUTDIR)/cical.o \
 	$(OUTDIR)/cical_time.o \
+	$(OUTDIR)/cical_list.o
 
 $(OUTDIR)/%.o: src/%.c
 	@mkdir -p $(OUTDIR)

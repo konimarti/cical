@@ -85,8 +85,10 @@ struct component *init_component(const char *name) {
 	return c;
 }
 
-void destroy_component(struct component *c) {
-	if (!c) return;
+void destroy_component(void *arg) {
+	if (!arg) return;
+
+	struct component *c = arg;
 
 	if (c->name) {
 		free(c->name);
@@ -288,8 +290,7 @@ void parse_property(char *const buf, struct component *const c) {
 void parse_icalendar_stream(FILE *f) {
 	char buf[BUF_SIZE];
 
-	struct component *stream[256];
-	size_t n = 0;
+	struct list *stream = new_list(destroy_component);
 
 	struct component *top, *tmp;
 
@@ -315,7 +316,7 @@ void parse_icalendar_stream(FILE *f) {
 			tmp = stack_pop(s);
 			if (stack_empty(s)) {
 				top = (void *)0;
-				stream[n++] = tmp;
+				list_add(stream, tmp);
 			} else {
 				top = stack_pop(s);
 				component_add(top, tmp);
@@ -331,11 +332,11 @@ void parse_icalendar_stream(FILE *f) {
 		}
 	}
 
-	for (size_t i = 0; i < n; i++) {
-		printf("object: %ld\n", i);
-		component_print(stream[i], 0);
-		destroy_component(stream[i]);
+	for (iterator it = new_iterator(stream); !end(it); it = next(it)) {
+		component_print(current(it), 0);
 	}
+
+	destroy_list(stream);
 
 	destroy_reader(r);
 	destroy_stack(s);
