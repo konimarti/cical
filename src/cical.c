@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 /* Copyright (c) 2023 Koni Marti */
 
+#include <assert.h>
 #include <cical.h>
 #include <ctype.h>
 #include <errno.h>
@@ -13,13 +14,14 @@
 static void version() { printf("version: %s\n", VERSION); }
 
 static void usage(void) {
-	puts("usage: cical [-h] [-v] [-f FILE]");
+	puts("usage: cical [-h] [-v] [-j] [-f FILE]");
 	puts("");
 	puts("Parse iCalendar streams.");
 	puts("");
 	puts("options:");
 	puts("  -h       show this help message");
 	puts("  -v 	 show version");
+	puts("  -j 	 print in json format");
 	puts("  -f FILE  read from filename (default stdin)");
 }
 
@@ -113,30 +115,88 @@ void component_add_property(struct component *c, struct property *p) {
 	list_add(c->prop, p);
 }
 
-void component_print(struct component *c, int depth) {
+void print_escaped_json(char *p) {
+	char c;
+	while ((c = *(p++)) != '\0') {
+		switch (c) {
+			case '\\':
+			case '"':
+				printf("\\");
+		}
+		printf("%c", c);
+	}
+}
+
+void component_print_json(struct component *c, int depth) {
 	if (!c) return;
 
+	int n;
 	char indent[32];
-	snprintf(indent, 32, "%*d>", depth * 2, depth);
+	snprintf(indent, 32, "%*c ", 2 * depth, ' ');
 
-	printf("%s name: %s\n", indent, c->name);
+	printf("%s {\n", indent);
+	printf("%s  \"name\": \"%s\",\n", indent, c->name);
+	printf("%s  \"prop\": [\n", indent);
 	if (c->prop) {
-		printf("%s prop:\n", indent);
+		n = 0;
 		ITERATE(c->prop, arg) {
+			if (n) {
+				printf(",\n");
+			}
+
 			struct property *ptr = current(arg);
-			printf("%s     name=%s param=%s value=%s\n", indent,
-			       ptr->name, ptr->param, ptr->value);
+
+			printf("%s      {\n", indent);
+			printf("%s      \"name\": \"", indent);
+			print_escaped_json(ptr->name);
+			if (ptr->param != NULL) {
+				printf("\",\n%s      \"param\": \"", indent);
+				print_escaped_json(ptr->param);
+			}
+			if (ptr->value != NULL) {
+				printf("\",\n%s      \"value\": \"", indent);
+				print_escaped_json(ptr->value);
+			}
+			printf("\"}\n");
+
+			/* printf("%s     \"name=%s param=%s value=%s\",\n", */
+			/*        ptr->name, ptr->param, ptr->value); */
+			/*
 			if (strncmp(ptr->name, "DT", 2) == 0) {
 				time_t t = 0;
 				const char *parser = ptr->value;
 				parser = parse_rfc5545_time(parser, &t);
 				TRACE_PRINTLN("time parsed: %s", ctime(&t));
+				printf("%s     \"time=%s\",\n", indent,
+				       ctime(&t));
 			}
+			*/
+			++n;
+		}
+		if (n) {
+			printf("\n");
 		}
 	} else {
-		printf("%s prop: (no properties)\n", indent);
+		printf("%s \"(no properties)\"\n", indent);
 	}
-	ITERATE(c->comp, arg) { component_print(current(arg), ++depth); }
+	printf("%s   ],\n", indent);
+	printf("%s  \"components\": [\n", indent);
+	n = 0;
+	if (c->comp != NULL) {
+		ITERATE(c->comp, arg) {
+			if (n) {
+				printf(",\n");
+			}
+			component_print_json(current(arg), ++depth);
+			++n;
+		}
+		if (n) {
+			printf("\n");
+		}
+	}
+	printf("%s   ]\n", indent);
+
+	printf("%s }\n", indent);
 }
 
 void parse_property(char *const buf, struct component *const c) {
@@ -162,8 +222,7 @@ void parse_property(char *const buf, struct component *const c) {
 	}
 	*ptr = '\0';
 
-	while (isspace(*(++ptr)))
-		;
+	while (isspace(*(++ptr)));
 
 	if (has_param) {
 		t = strchr(buf, ';');
@@ -179,10 +238,11 @@ void parse_property(char *const buf, struct component *const c) {
 	component_add_property(c, init_property(buf, param, ptr));
 }
 
-void parse_icalendar_stream(FILE *f) {
-	char buf[BUF_SIZE];
+void parse_icalendar_stream(FILE *f, struct list *stream) {
+	assert(f);
+	assert(stream);
 
-	struct list *stream = new_list(destroy_component);
+	char buf[BUF_SIZE];
 
 	struct component *top, *tmp;
 
@@ -222,10 +282,6 @@ void parse_icalendar_stream(FILE *f) {
 		}
 	}
 
-	ITERATE(stream, x) { component_print(current(x), 1); }
-
-	destroy_list(stream);
-
 	destroy_reader(r);
 	destroy_stack(s);
 }
@@ -233,11 +289,16 @@ void parse_icalendar_stream(FILE *f) {
 int main(int argc, char *argv[]) {
 	const char *filename = (void *)0;
 	FILE *in_file = (void *)0;
-	int c;
+	int c, json;
 
-	while ((c = getopt(argc, argv, "hvf:")) != -1) {
+	json = 0;
+
+	while ((c = getopt(argc, argv, "hvjf:")) != -1) {
 		errno = 0;
 		switch (c) {
+			case 'j':
+				json = 1;
+				break;
 			case 'f':
 				filename = optarg;
 				break;
@@ -264,6 +325,18 @@ int main(int argc, char *argv[]) {
 			return 1;
 		}
 	}
-	parse_icalendar_stream(in_file);
+
+	struct list *stream = new_list(destroy_component);
+
+	parse_icalendar_stream(in_file, stream);
+
+	if (json) {
+		printf("[\n");
+		ITERATE(stream, x) { component_print_json(current(x), 1); }
+		printf("]\n");
+	}
+
+	destroy_list(stream);
+
 	return 0;
 }

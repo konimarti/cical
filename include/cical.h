@@ -5,10 +5,10 @@
 #define VERSION "no_version_set"
 #endif
 
-#include <cical_list.h>
-#include <cical_reader.h>
-#include <cical_stack.h>
-#include <cical_time.h>
-#include <cical_trace.h>
+#include "cical_list.h"
+#include "cical_reader.h"
+#include "cical_stack.h"
+#include "cical_time.h"
+#include "cical_trace.h"
 
 #endif
