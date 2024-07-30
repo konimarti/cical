@@ -8,9 +8,10 @@ Still work-in-progress..
 
 TODOs:
 
-- [ ] pretty display of the parsed iCalendar object 
-- [ ] parse parameter list (key=value list)
-- [ ] parse date time (local time, time with timezone, UTC time) 
+-   [x] pretty display of the parsed iCalendar object in JSON format
+-   [x] parse date time (local time, time with timezone, UTC time)
+-   [ ] parse parameter list (key=value list)
+-   [ ] ..
 
 # Contributing
 
