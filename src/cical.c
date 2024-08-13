@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: MIT */
 /* Copyright (c) 2023 Koni Marti */
 
+#include "cical.h"
+
 #include <assert.h>
-#include <cical.h>
 #include <ctype.h>
 #include <errno.h>
 #include <getopt.h>
@@ -157,7 +158,7 @@ void component_print_json(struct component *c, int depth) {
 				printf("\",\n%s      \"value\": \"", indent);
 				print_escaped_json(ptr->value);
 			}
-			printf("\"}\n");
+			printf("\"}");
 
 			/* printf("%s     \"name=%s param=%s value=%s\",\n", */
 			/*        ptr->name, ptr->param, ptr->value); */
