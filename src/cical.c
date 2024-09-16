@@ -59,8 +59,9 @@ void
 property_destroy(void *arg)
 {
 	struct property *p = arg;
-	if (!p)
+	if (!p) {
 		return;
+	}
 	free(p->name);
 	free(p->param);
 	free(p->value);

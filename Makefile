@@ -47,4 +47,7 @@ check: cical cical.1
 tests: cical test/test.sh
 	test/test.sh
 
+memcheck: cical test/test.sh
+	TEST_PREFIX="valgrind -s --leak-check=full --error-exitcode=1 --track-origins=yes" test/test.sh
+
 .PHONY: all clean install uninstall check test

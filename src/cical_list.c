@@ -72,15 +72,15 @@ list_destroy(struct list *list, destructor destroy)
 	if (!list)
 		return;
 
-	struct node *current = { 0 };
+	struct node *n = { 0 };
 	while (list->head) {
-		current = list->head;
-		list->head = current->next;
+		n = list->head;
+		list->head = n->next;
 
-		if (destroy && current->data)
-			destroy(current->data);
+		if (destroy && n->data)
+			destroy(n->data);
 
-		node_destroy(current);
+		node_destroy(n);
 	}
 	free(list);
 }

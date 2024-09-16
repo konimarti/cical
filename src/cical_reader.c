@@ -44,7 +44,7 @@ reader_getline(size_t n, char buf[], struct reader *r)
 	int ch;
 	char *ptr = r->buf;
 
-	while (fgets(ptr, (int)n + (int)(ptr - r->buf), r->in) != NULL) {
+	while (fgets(ptr, (int)n - (int)(ptr - r->buf), r->in) != NULL) {
 		++r->lines;
 
 		if ((ch = fgetc(r->in)) == EOF) {
@@ -62,7 +62,8 @@ reader_getline(size_t n, char buf[], struct reader *r)
 		ptr = endline(ptr);
 	}
 
-	*endline(r->buf) = '\0';
+	ptr = endline(ptr);
+	*ptr = '\0';
 
 	strncpy(buf, r->buf, n);
 	return strlen(buf);
