@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern char *strdup(const char *);
+
 static void
 version()
 {
@@ -32,16 +34,6 @@ usage(void)
 	puts("  -f FILE  read from filename (default stdin)");
 }
 
-static char *
-dup(const char *c)
-{
-	char *dup = malloc(strlen(c) + 1);
-	if (dup) {
-		strcpy(dup, c);
-	}
-	return dup;
-}
-
 struct property {
 	char *name;
 	char *param;
@@ -57,25 +49,21 @@ property_create(const char *name, const char *param, const char *value)
 		exit(EXIT_FAILURE);
 	}
 
-	p->name = dup(name);
-	p->param = dup(param);
-	p->value = dup(value);
+	p->name = strdup(name);
+	p->param = strdup(param);
+	p->value = strdup(value);
 	return p;
 }
 
 void
 property_destroy(void *arg)
 {
-	if (!arg)
-		return;
-
 	struct property *p = arg;
-	if (p->name)
-		free(p->name);
-	if (p->param)
-		free(p->param);
-	if (p->value)
-		free(p->value);
+	if (!p)
+		return;
+	free(p->name);
+	free(p->param);
+	free(p->value);
 	free(p);
 }
 
@@ -88,23 +76,13 @@ struct component {
 void
 component_destroy(void *arg)
 {
-	if (!arg)
-		return;
-
 	struct component *c = arg;
-
-	if (c->name) {
-		free(c->name);
+	if (!c) {
+		return;
 	}
-
-	if (c->prop) {
-		list_destroy(c->prop, property_destroy);
-	}
-
-	if (c->comp) {
-		list_destroy(c->comp, component_destroy);
-	}
-
+	list_destroy(c->prop, property_destroy);
+	list_destroy(c->comp, component_destroy);
+	free(c->name);
 	free(c);
 }
 
@@ -116,7 +94,7 @@ component_create(const char *name)
 		perror("failed to allocate component memory");
 		exit(EXIT_FAILURE);
 	}
-	c->name = dup(name);
+	c->name = strdup(name);
 	c->prop = list_create();
 	c->comp = list_create();
 	return c;
@@ -158,9 +136,6 @@ print_escaped_json(char *p)
 void
 component_print_json(struct component *c, int depth)
 {
-	if (!c)
-		return;
-
 	int n;
 	char indent[32];
 	snprintf(indent, 32, "%*c ", 2 * depth, ' ');
