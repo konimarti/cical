@@ -11,8 +11,8 @@ struct reader {
 	char buf[BUF_SIZE];
 };
 
-struct reader *init_reader(FILE *restrict in);
-void destroy_reader(struct reader *r);
-size_t reader_getline(size_t n, char buf[n], struct reader *r);
+struct reader *reader_create(FILE *in);
+void reader_destroy(struct reader *r);
+size_t reader_getline(size_t n, char buf[], struct reader *r);
 
 #endif

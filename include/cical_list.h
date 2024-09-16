@@ -12,12 +12,11 @@ typedef void (*destructor)(void *);
 
 struct list {
 	struct node *head;
-	destructor destroy_data;
 };
 
 // public list api
-struct list *new_list(destructor fn);
-void destroy_list(struct list *list);
+struct list *list_create();
+void list_destroy(struct list *list, destructor fn);
 void list_add(struct list *list, void *data);
 
 // public list iterator api

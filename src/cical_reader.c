@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct reader *init_reader(FILE *restrict in) {
+struct reader *
+reader_create(FILE *restrict in)
+{
 	struct reader *r = malloc(sizeof(struct reader));
 	if (!r) {
 		perror("could not create reader");
@@ -15,19 +17,29 @@ struct reader *init_reader(FILE *restrict in) {
 	return r;
 }
 
-void destroy_reader(struct reader *r) {
-	if (r) free(r);
+void
+reader_destroy(struct reader *r)
+{
+	if (r)
+		free(r);
 }
 
-static char *endline(char *buf) {
+static char *
+endline(char *buf)
+{
 	char *ptr = strstr(buf, "\r\n");
-	if (!ptr) ptr = strchr(buf, '\n');
-	if (!ptr) ptr = buf + strlen(buf);
+	if (!ptr)
+		ptr = strchr(buf, '\n');
+	if (!ptr)
+		ptr = buf + strlen(buf);
 	return ptr;
 }
 
-size_t reader_getline(size_t n, char buf[n], struct reader *r) {
-	if (!r || (r && feof(r->in))) return 0;
+size_t
+reader_getline(size_t n, char buf[], struct reader *r)
+{
+	if (!r || (r && feof(r->in)))
+		return 0;
 
 	int ch;
 	char *ptr = r->buf;

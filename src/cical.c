@@ -12,9 +12,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void version() { printf("version: %s\n", VERSION); }
+static void
+version()
+{
+	printf("version: %s\n", VERSION);
+}
 
-static void usage(void) {
+static void
+usage(void)
+{
 	puts("usage: cical [-h] [-v] [-j] [-f FILE]");
 	puts("");
 	puts("Parse iCalendar streams.");
@@ -26,7 +32,9 @@ static void usage(void) {
 	puts("  -f FILE  read from filename (default stdin)");
 }
 
-static char *dup(const char *c) {
+static char *
+dup(const char *c)
+{
 	char *dup = malloc(strlen(c) + 1);
 	if (dup) {
 		strcpy(dup, c);
@@ -40,9 +48,10 @@ struct property {
 	char *value;
 };
 
-struct property *init_property(const char *name, const char *param,
-			       const char *value) {
-	struct property *p = malloc(sizeof(struct property));
+struct property *
+property_create(const char *name, const char *param, const char *value)
+{
+	struct property *p = malloc(sizeof(*p));
 	if (!p) {
 		perror("failed to allocate property memory");
 		exit(EXIT_FAILURE);
@@ -54,13 +63,19 @@ struct property *init_property(const char *name, const char *param,
 	return p;
 }
 
-void destroy_property(void *arg) {
-	if (!arg) return;
+void
+property_destroy(void *arg)
+{
+	if (!arg)
+		return;
 
 	struct property *p = arg;
-	if (p->name) free(p->name);
-	if (p->param) free(p->param);
-	if (p->value) free(p->value);
+	if (p->name)
+		free(p->name);
+	if (p->param)
+		free(p->param);
+	if (p->value)
+		free(p->value);
 	free(p);
 }
 
@@ -70,8 +85,11 @@ struct component {
 	struct list *comp;
 };
 
-void destroy_component(void *arg) {
-	if (!arg) return;
+void
+component_destroy(void *arg)
+{
+	if (!arg)
+		return;
 
 	struct component *c = arg;
 
@@ -80,56 +98,68 @@ void destroy_component(void *arg) {
 	}
 
 	if (c->prop) {
-		destroy_list(c->prop);
+		list_destroy(c->prop, property_destroy);
 	}
 
 	if (c->comp) {
-		destroy_list(c->comp);
+		list_destroy(c->comp, component_destroy);
 	}
 
 	free(c);
 }
 
-struct component *init_component(const char *name) {
+struct component *
+component_create(const char *name)
+{
 	struct component *c = malloc(sizeof(struct component));
 	if (!c) {
 		perror("failed to allocate component memory");
 		exit(EXIT_FAILURE);
 	}
 	c->name = dup(name);
-	c->prop = new_list(destroy_property);
-	c->comp = new_list(destroy_component);
+	c->prop = list_create();
+	c->comp = list_create();
 	return c;
 }
 
 // prepend component c to dst in O(1)
-void component_add(struct component *dst, struct component *c) {
-	if (!dst || !c) return;
+void
+component_add(struct component *dst, struct component *c)
+{
+	if (!dst || !c)
+		return;
 
 	list_add(dst->comp, c);
 }
 
 // prepend property p to component c in O(1)
-void component_add_property(struct component *c, struct property *p) {
-	if (!c || !p) return;
+void
+component_property_add(struct component *c, struct property *p)
+{
+	if (!c || !p)
+		return;
 
 	list_add(c->prop, p);
 }
 
-void print_escaped_json(char *p) {
+void
+print_escaped_json(char *p)
+{
 	char c;
 	while ((c = *(p++)) != '\0') {
 		switch (c) {
-			case '\\':
-			case '"':
-				printf("\\");
+		case '\\':
+		case '"': printf("\\");
 		}
 		printf("%c", c);
 	}
 }
 
-void component_print_json(struct component *c, int depth) {
-	if (!c) return;
+void
+component_print_json(struct component *c, int depth)
+{
+	if (!c)
+		return;
 
 	int n;
 	char indent[32];
@@ -200,46 +230,55 @@ void component_print_json(struct component *c, int depth) {
 	printf("%s }\n", indent);
 }
 
-void parse_property(char *const buf, struct component *const c) {
+void
+parse_property(char *const buf, struct component *const c)
+{
 	char *ptr = buf, *t, *param;
 	bool has_param = false;
 
 	while (*ptr != ':') {
 		switch (*ptr) {
-			case '\0':
-				fprintf(stderr,
-					"no valid property found in: %s\n",
-					buf);
-				return;
-			case ';':
-				has_param = true;
-				break;
-			case '"':
-				t = strchr(ptr + 1, '"');
-				if (t) ptr = t;
-				break;
+		case '\0': {
+			fprintf(stderr,
+				"no valid property found in: %s\n",
+				buf);
+			return;
+		};
+		case ';': {
+			has_param = true;
+		}; break;
+		case '"': {
+			t = strchr(ptr + 1, '"');
+			if (t) {
+				ptr = t;
+			}
+		}; break;
 		}
 		ptr++;
 	}
 	*ptr = '\0';
 
-	while (isspace(*(++ptr)));
+	while (isspace(*(++ptr)))
+		;
 
 	if (has_param) {
 		t = strchr(buf, ';');
 		*t = '\0';
 		param = ++t;
-	} else
+	} else {
 		param = ptr + strlen(ptr);
+	}
 
 	TRACE_PRINTLN("property-name : '%s'", buf);
 	TRACE_PRINTLN("property-param: '%s'", param);
 	TRACE_PRINTLN("property-value: '%s'\n", ptr);
 
-	component_add_property(c, init_property(buf, param, ptr));
+	component_property_add(c, property_create(buf, param, ptr));
 }
 
-void parse_icalendar_stream(FILE *f, struct list *stream) {
+void
+parse_icalendar_stream(FILE *f, struct list *stream)
+{
 	assert(f);
 	assert(stream);
 
@@ -247,13 +286,13 @@ void parse_icalendar_stream(FILE *f, struct list *stream) {
 
 	struct component *top, *tmp;
 
-	struct stack *s = init_stack();
-	struct reader *r = init_reader(f);
+	struct stack *s = stack_create();
+	struct reader *r = reader_create(f);
 
 	while (reader_getline(sizeof(buf), buf, r)) {
 		if (strncmp(buf, "BEGIN:", 6) == 0) {
 			TRACE_PRINTLN("stack: push: %s", buf + 6);
-			top = init_component(buf + 6);
+			top = component_create(buf + 6);
 			stack_push(s, top);
 			continue;
 		}
@@ -271,8 +310,8 @@ void parse_icalendar_stream(FILE *f, struct list *stream) {
 			} else {
 				top = stack_pop(s);
 				component_add(top, tmp);
-				TRACE_PRINTLN("stack: push back: %s",
-					      top->name);
+				TRACE_PRINTLN(
+					"stack: push back: %s", top->name);
 				stack_push(s, top);
 			}
 			continue;
@@ -283,11 +322,13 @@ void parse_icalendar_stream(FILE *f, struct list *stream) {
 		}
 	}
 
-	destroy_reader(r);
-	destroy_stack(s);
+	reader_destroy(r);
+	stack_destroy(s);
 }
 
-int main(int argc, char *argv[]) {
+int
+main(int argc, char *argv[])
+{
 	const char *filename = (void *)0;
 	FILE *in_file = (void *)0;
 	int c, json;
@@ -297,26 +338,32 @@ int main(int argc, char *argv[]) {
 	while ((c = getopt(argc, argv, "hvjf:")) != -1) {
 		errno = 0;
 		switch (c) {
-			case 'j':
-				json = 1;
-				break;
-			case 'f':
-				filename = optarg;
-				break;
-			case 'v':
-				version();
-				return 1;
-			default:
-				usage();
-				return 1;
+		case 'j': {
+			json = 1;
+		}; break;
+		case 'f': {
+			filename = optarg;
+		}; break;
+		case 'v': {
+			version();
+			return 1;
+		}
+		default: {
+			usage();
+			return 1;
+		}
 		}
 	}
+
 	if (optind < argc) {
-		fprintf(stderr, "%s: unexpected argument -- '%s'\n", argv[0],
+		fprintf(stderr,
+			"%s: unexpected argument -- '%s'\n",
+			argv[0],
 			argv[optind]);
 		usage();
 		return 1;
 	}
+
 	if (!filename || !strcmp(filename, "-")) {
 		in_file = stdin;
 	} else {
@@ -327,17 +374,19 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	struct list *stream = new_list(destroy_component);
+	struct list *stream = list_create();
 
 	parse_icalendar_stream(in_file, stream);
 
 	if (json) {
 		printf("[\n");
-		ITERATE(stream, x) { component_print_json(current(x), 1); }
+		ITERATE(stream, x) {
+			component_print_json(current(x), 1);
+		}
 		printf("]\n");
 	}
 
-	destroy_list(stream);
+	list_destroy(stream, component_destroy);
 
 	return 0;
 }

@@ -10,8 +10,8 @@ struct stack {
 	int top;
 };
 
-struct stack *init_stack();
-void destroy_stack(struct stack *s);
+struct stack *stack_create();
+void stack_destroy(struct stack *s);
 void stack_push(struct stack *s, void *arg);
 void *stack_pop(struct stack *s);
 bool stack_empty(struct stack *s);
