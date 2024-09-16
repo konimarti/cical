@@ -1,0 +1,89 @@
+[
+    {
+     "name": "VCALENDAR",
+     "prop": [
+         {
+         "name": "PRODID",
+         "param": "",
+         "value": "-//ABC Corporation//NONSGML My Product//EN"},
+         {
+         "name": "VERSION",
+         "param": "",
+         "value": "2.0"}
+      ],
+     "components": [
+      {
+       "name": "VTODO",
+       "prop": [
+           {
+           "name": "DESCRIPTION",
+           "param": "ALTREP=\"cid:part1.0001@example.org\"",
+           "value": "The Fall'98 Wild Wizards Conference - - Las Vegas\\, NV\\, USA"},
+           {
+           "name": "SUMMARY",
+           "param": "",
+           "value": "Submit Income Taxes"},
+           {
+           "name": "STATUS",
+           "param": "",
+           "value": "NEEDS-ACTION"},
+           {
+           "name": "DUE",
+           "param": "",
+           "value": "19980415T000000"},
+           {
+           "name": "ATTENDEE",
+           "param": "PARTSTAT=ACCEPTED",
+           "value": "mailto:jqpublic@example.com"},
+           {
+           "name": "ORGANIZER",
+           "param": "",
+           "value": "mailto:unclesam@example.com"},
+           {
+           "name": "UID",
+           "param": "",
+           "value": "uid4@example.com"},
+           {
+           "name": "SEQUENCE",
+           "param": "",
+           "value": "2"},
+           {
+           "name": "DTSTAMP",
+           "param": "",
+           "value": "19980130T134500Z"}
+        ],
+       "components": [
+        {
+         "name": "VALARM",
+         "prop": [
+             {
+             "name": "DURATION",
+             "param": "",
+             "value": "PT1H"},
+             {
+             "name": "REPEAT",
+             "param": "",
+             "value": "4"},
+             {
+             "name": "ATTACH",
+             "param": "FMTTYPE=audio/basic",
+             "value": "http://example.com/pub/audio-files/ssbanner.aud"},
+             {
+             "name": "TRIGGER",
+             "param": "",
+             "value": "19980403T120000Z"},
+             {
+             "name": "ACTION",
+             "param": "",
+             "value": "AUDIO"}
+          ],
+         "components": [
+          ]
+        }
+
+        ]
+      }
+
+      ]
+    }
+]

@@ -44,4 +44,7 @@ uninstall:
 check: cical cical.1
 	@find test -perm -111 -exec '{}' \;
 
-.PHONY: all clean install uninstall check
+tests: cical test/test.sh
+	test/test.sh
+
+.PHONY: all clean install uninstall check test
