@@ -1,7 +1,7 @@
 VERSION=0.1.0
 CFLAGS?=-g
 MAINFLAGS:=-DVERSION='"$(VERSION)"' -Wall -Wextra -Werror -Wno-unused-parameter
-LDFLAGS+=-static
+#LDFLAGS+=-static
 INCLUDE+=-Iinclude
 PREFIX?=/usr/local
 BINDIR?=$(PREFIX)/bin
@@ -14,7 +14,6 @@ OBJECTS=\
 	$(OUTDIR)/cical.o \
 	$(OUTDIR)/cical_time.o \
 	$(OUTDIR)/cical_list.o \
-	$(OUTDIR)/cical_stack.o \
 	$(OUTDIR)/cical_reader.o
 
 $(OUTDIR)/%.o: src/%.c
