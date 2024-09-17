@@ -14,7 +14,8 @@ OBJECTS=\
 	$(OUTDIR)/cical.o \
 	$(OUTDIR)/cical_time.o \
 	$(OUTDIR)/cical_list.o \
-	$(OUTDIR)/cical_reader.o
+	$(OUTDIR)/cical_reader.o \
+	$(OUTDIR)/cical_print_json.o
 
 $(OUTDIR)/%.o: src/%.c
 	@mkdir -p $(OUTDIR)
