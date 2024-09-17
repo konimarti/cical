@@ -24,15 +24,11 @@ reader_destroy(struct reader *r)
 		free(r);
 }
 
-static char *
-endline(char *buf)
+char *
+endline(char *s)
 {
-	char *ptr = strstr(buf, "\r\n");
-	if (!ptr)
-		ptr = strchr(buf, '\n');
-	if (!ptr)
-		ptr = buf + strlen(buf);
-	return ptr;
+	while (*s && *s != '\r' && *s != '\n') s++;
+	return s;
 }
 
 size_t
