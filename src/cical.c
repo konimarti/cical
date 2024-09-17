@@ -41,7 +41,7 @@ struct property {
 };
 
 struct property *
-property_create(const char *name, const char *param, const char *value)
+property_create(char *const name, char *const param, char *const value)
 {
 	struct property *p = malloc(sizeof(*p));
 	if (!p) {
@@ -49,9 +49,9 @@ property_create(const char *name, const char *param, const char *value)
 		exit(EXIT_FAILURE);
 	}
 
-	p->name = strdup(name);
-	p->param = strdup(param);
-	p->value = strdup(value);
+	p->name = name;
+	p->param = param;
+	p->value = value;
 	return p;
 }
 
@@ -206,50 +206,74 @@ component_print_json(struct component *c, int depth)
 	printf("%s }\n", indent);
 }
 
-void
-parse_property(char *const buf, struct component *const c)
+/*
+ * Reads until a character in stop is encountered. Does not stop inside of
+ * a quoted string.
+ *
+ */
+char *
+read_until(char *s, char *stop)
 {
-	char *ptr = buf, *t, *param;
-	bool has_param = false;
+	int quotes = 0;
+	while (*s && (!strchr(stop, *s) || quotes % 2 == 1)) {
+		if (*s == '"')
+			quotes++;
+		s++;
+	}
+	return s;
+}
 
-	while (*ptr != ':') {
-		switch (*ptr) {
-		case '\0': {
-			fprintf(stderr,
-				"no valid property found in: %s\n",
-				buf);
-			return;
-		};
-		case ';': {
-			has_param = true;
-		}; break;
-		case '"': {
-			t = strchr(ptr + 1, '"');
-			if (t) {
-				ptr = t;
-			}
-		}; break;
+char *
+read_part(char const *const s, size_t l)
+{
+	char *ret = malloc((l + 1) * sizeof(*ret));
+	memcpy(ret, s, l);
+	ret[l] = '\0';
+	return ret;
+}
+
+struct property *
+property_parse(char *const s)
+{
+	char *name, *param, *value;
+	char *start, *end;
+
+	/* read property name */
+	start = s;
+	end = read_until(start, ":;");
+	if (end == 0) {
+		fprintf(stderr, "property_parse fail: invalid name\n");
+		goto error;
+	}
+	name = read_part(start, (size_t)(end - start));
+
+	/* read parameter list */
+	if (*end == ';') {
+		start = ++end;
+		end = read_until(start, ":");
+		if (end == 0) {
+			fprintf(stderr, "property_parse fail: invalid param\n");
+			goto error;
 		}
-		ptr++;
-	}
-	*ptr = '\0';
-
-	while (isspace(*(++ptr)))
-		;
-
-	if (has_param) {
-		t = strchr(buf, ';');
-		*t = '\0';
-		param = ++t;
+		param = read_part(start, (size_t)(end - start));
 	} else {
-		param = ptr + strlen(ptr);
+		param = read_part(0, 0);
 	}
 
-	TRACE_PRINTLN("property-name : '%s'", buf);
-	TRACE_PRINTLN("property-param: '%s'", param);
-	TRACE_PRINTLN("property-value: '%s'\n", ptr);
+	/* read value */
+	if (*end == ':') {
+		end++;
+	} else {
+		fprintf(stderr, "property_parse fail: no value found\n");
+		goto error;
+	}
+	value = read_part(end, strlen(end));
 
-	component_property_add(c, property_create(buf, param, ptr));
+	return property_create(name, param, value);
+
+error:
+	fprintf(stderr, "invalid contentline: %s", s);
+	return 0;
 }
 
 void
@@ -257,6 +281,7 @@ parse_component(struct reader *r, struct component *top)
 {
 	char buf[BUF_SIZE];
 	struct component *child = 0;
+	struct property *p = 0;
 	while (reader_getline(sizeof(buf), buf, r)) {
 		if (strncmp(buf, "BEGIN:", 6) == 0) {
 			TRACE_PRINTLN("parse BEGIN: %s", buf + 6);
@@ -267,7 +292,9 @@ parse_component(struct reader *r, struct component *top)
 			TRACE_PRINTLN("END: %s", buf + 4);
 			break;
 		} else {
-			parse_property(buf, top);
+			p = property_parse(buf);
+			if (p)
+				component_property_add(top, p);
 		}
 	}
 }
@@ -331,7 +358,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	struct component *top = component_create("TOP");
+	struct component *top = component_create("top");
 
 	parse_icalendar(in_file, top);
 
