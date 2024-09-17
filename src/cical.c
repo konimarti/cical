@@ -253,53 +253,34 @@ parse_property(char *const buf, struct component *const c)
 }
 
 void
-parse_icalendar_stream(FILE *f, struct list *stream)
+parse_component(struct reader *r, struct component *top)
 {
-	assert(f);
-	assert(stream);
-
 	char buf[BUF_SIZE];
-
-	struct component *top, *tmp;
-
-	struct stack *s = stack_create();
-	struct reader *r = reader_create(f);
-
+	struct component *child = 0;
 	while (reader_getline(sizeof(buf), buf, r)) {
 		if (strncmp(buf, "BEGIN:", 6) == 0) {
-			TRACE_PRINTLN("stack: push: %s", buf + 6);
-			top = component_create(buf + 6);
-			stack_push(s, top);
-			continue;
-		}
-
-		if (strncmp(buf, "END:", 4) == 0) {
-			TRACE_PRINTLN("stack: pop: %s", buf + 4);
-			if (stack_empty(s)) {
-				perror("trying to pop empty stack");
-				exit(EXIT_FAILURE);
-			}
-			tmp = stack_pop(s);
-			if (stack_empty(s)) {
-				top = (void *)0;
-				list_add(stream, tmp);
-			} else {
-				top = stack_pop(s);
-				component_add(top, tmp);
-				TRACE_PRINTLN(
-					"stack: push back: %s", top->name);
-				stack_push(s, top);
-			}
-			continue;
-		}
-
-		if (top) {
+			TRACE_PRINTLN("parse BEGIN: %s", buf + 6);
+			child = component_create(buf + 6);
+			parse_component(r, child);
+			component_add(top, child);
+		} else if (strncmp(buf, "END:", 4) == 0) {
+			TRACE_PRINTLN("END: %s", buf + 4);
+			break;
+		} else {
 			parse_property(buf, top);
 		}
 	}
+}
 
+void
+parse_icalendar(FILE *f, struct component *top)
+{
+	assert(f);
+	assert(top);
+
+	struct reader *r = reader_create(f);
+	parse_component(r, top);
 	reader_destroy(r);
-	stack_destroy(s);
 }
 
 int
@@ -350,19 +331,19 @@ main(int argc, char *argv[])
 		}
 	}
 
-	struct list *stream = list_create();
+	struct component *top = component_create("TOP");
 
-	parse_icalendar_stream(in_file, stream);
+	parse_icalendar(in_file, top);
 
 	if (json) {
 		printf("[\n");
-		ITERATE(stream, x) {
+		ITERATE(top->comp, x) {
 			component_print_json(current(x), 1);
 		}
 		printf("]\n");
 	}
 
-	list_destroy(stream, component_destroy);
+	component_destroy(top);
 
 	return 0;
 }
