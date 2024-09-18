@@ -31,6 +31,7 @@ usage(void)
 	puts("  -h       show this help message");
 	puts("  -v 	 show version");
 	puts("  -j 	 print in json format");
+	puts("  -m 	 print in markdown format");
 	puts("  -i FILE  read from filename (default stdin)");
 	puts("  -o FILE  write to filename (default stdout)");
 }
@@ -235,19 +236,25 @@ main(int argc, char *argv[])
 {
 	const char *filename, *outfilename;
 	FILE *in_file, *out_file;
-	int c, json;
+	int c, json, markdown;
 
 	filename = 0;
-	in_file = 0;
 	outfilename = 0;
-	out_file = 0;
-	json = 0;
 
-	while ((c = getopt(argc, argv, "hvjf:o:")) != -1) {
+	in_file = 0;
+	out_file = 0;
+
+	json = 0;
+	markdown = 0;
+
+	while ((c = getopt(argc, argv, "hvjmi:o:")) != -1) {
 		errno = 0;
 		switch (c) {
 		case 'j': {
 			json = 1;
+		}; break;
+		case 'm': {
+			markdown = 1;
 		}; break;
 		case 'i': {
 			filename = optarg;
@@ -265,6 +272,12 @@ main(int argc, char *argv[])
 			return 1;
 		}
 		}
+	}
+
+	if (json && markdown) {
+		fprintf(stderr,
+			"json and markdown options are mutually exclusive.");
+		return 1;
 	}
 
 	if (optind < argc) {
@@ -301,6 +314,8 @@ main(int argc, char *argv[])
 
 	if (json) {
 		json_print(out_file, top);
+	} else if (markdown) {
+		markdown_print(out_file, top);
 	}
 
 	component_destroy(top);

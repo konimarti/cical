@@ -17,7 +17,8 @@ SRCS=\
 	cical_time.c \
 	cical_list.c \
 	cical_reader.c \
-	cical_print_json.c
+	cical_print_json.c \
+	cical_print_markdown.c
 OBJS=$(SRCS:.c=.o)
 EXE=cical
 

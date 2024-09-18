@@ -8,9 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-char const *const space = " ";
+static char const *const space = " ";
 
-void
+typedef void (*printer)(FILE *f, void *, int);
+
+static void
 json_print_escaped_str(FILE *f, char *p)
 {
 	char c;
@@ -29,9 +31,8 @@ json_print_escaped_str(FILE *f, char *p)
 		return;
 	}
 }
-typedef void (*printer)(FILE *f, void *, int);
 
-void
+static void
 json_print_list(FILE *f, struct list *l, int indent, printer fn)
 {
 	int n = 0;
@@ -53,7 +54,7 @@ json_print_list(FILE *f, struct list *l, int indent, printer fn)
 	}
 }
 
-void
+static void
 json_print_property(FILE *f, void *obj, int indent)
 {
 	struct property *p = obj;
@@ -75,7 +76,7 @@ json_print_property(FILE *f, void *obj, int indent)
 	fprintf(f, "%*s}", indent, space);
 }
 
-void
+static void
 json_print_component(FILE *f, void *obj, int indent)
 {
 	struct component *c = obj;
