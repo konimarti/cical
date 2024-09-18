@@ -23,7 +23,7 @@ version()
 static void
 usage(void)
 {
-	puts("usage: cical [-h] [-v] [-j] [-f FILE]");
+	puts("usage: cical [-h|-v] [-j] [-i FILE] [-o FILE]");
 	puts("");
 	puts("Parse iCalendar streams.");
 	puts("");
@@ -31,7 +31,8 @@ usage(void)
 	puts("  -h       show this help message");
 	puts("  -v 	 show version");
 	puts("  -j 	 print in json format");
-	puts("  -f FILE  read from filename (default stdin)");
+	puts("  -i FILE  read from filename (default stdin)");
+	puts("  -o FILE  write to filename (default stdout)");
 }
 
 struct property *
@@ -232,25 +233,33 @@ parse_icalendar(FILE *f, struct component *top)
 int
 main(int argc, char *argv[])
 {
-	const char *filename = (void *)0;
-	FILE *in_file = (void *)0;
+	const char *filename, *outfilename;
+	FILE *in_file, *out_file;
 	int c, json;
 
+	filename = 0;
+	in_file = 0;
+	outfilename = 0;
+	out_file = 0;
 	json = 0;
 
-	while ((c = getopt(argc, argv, "hvjf:")) != -1) {
+	while ((c = getopt(argc, argv, "hvjf:o:")) != -1) {
 		errno = 0;
 		switch (c) {
 		case 'j': {
 			json = 1;
 		}; break;
-		case 'f': {
+		case 'i': {
 			filename = optarg;
+		}; break;
+		case 'o': {
+			outfilename = optarg;
 		}; break;
 		case 'v': {
 			version();
 			return 1;
 		}
+		case 'h':
 		default: {
 			usage();
 			return 1;
@@ -272,20 +281,28 @@ main(int argc, char *argv[])
 	} else {
 		in_file = fopen(filename, "r");
 		if (!in_file) {
-			perror("error: cannot open file");
+			perror("error: cannot open file to read");
+			return 1;
+		}
+	}
+
+	if (!outfilename || !strcmp(outfilename, "-")) {
+		out_file = stdout;
+	} else {
+		out_file = fopen(outfilename, "w");
+		if (!out_file) {
+			perror("error: cannot open file to write");
 			return 1;
 		}
 	}
 
 	struct component *top = component_create("top");
-
 	parse_icalendar(in_file, top);
 
 	if (json) {
-		json_print(top);
+		json_print(out_file, top);
 	}
 
 	component_destroy(top);
-
 	return 0;
 }

@@ -11,92 +11,92 @@
 char const *const space = " ";
 
 void
-json_print_escaped_str(char *p)
+json_print_escaped_str(FILE *f, char *p)
 {
 	char c;
 	if (p) {
 		while ((c = *(p++)) != '\0') {
 			if (iscntrl(c)) {
-				printf("\\%03o", c);
+				fprintf(f, "\\%03o", c);
 			} else if (c == '\"' || c == '\\') {
-				printf("\\%c", c);
+				fprintf(f, "\\%c", c);
 			} else {
-				printf("%c", c);
+				fprintf(f, "%c", c);
 			}
 		}
 	} else {
-		printf("\"\"");
+		fprintf(f, "\"\"");
 		return;
 	}
 }
-typedef void (*printer)(void *, int);
+typedef void (*printer)(FILE *f, void *, int);
 
 void
-json_print_list(struct list *l, int indent, printer fn)
+json_print_list(FILE *f, struct list *l, int indent, printer fn)
 {
 	int n = 0;
 	if (l && l->head) {
-		printf("[\n");
+		fprintf(f, "[\n");
 		ITERATE(l, arg) {
 			if (n) {
-				printf(",\n");
+				fprintf(f, ",\n");
 			}
-			fn(current(arg), indent + 4);
+			fn(f, current(arg), indent + 4);
 			++n;
 		}
 		if (n) {
-			printf("\n");
+			fprintf(f, "\n");
 		}
-		printf("%*s]", indent + 2, space);
+		fprintf(f, "%*s]", indent + 2, space);
 	} else {
-		printf("[]");
+		fprintf(f, "[]");
 	}
 }
 
 void
-json_print_property(void *obj, int indent)
+json_print_property(FILE *f, void *obj, int indent)
 {
 	struct property *p = obj;
-	printf("%*s{\n", indent, space);
-	printf("%*s\"name\": ", indent + 2, space);
-	printf("\"");
-	json_print_escaped_str(p->name);
+	fprintf(f, "%*s{\n", indent, space);
+	fprintf(f, "%*s\"name\": ", indent + 2, space);
+	fprintf(f, "\"");
+	json_print_escaped_str(f, p->name);
 	if (p->param && strlen(p->param)) {
-		printf("\",\n%*s\"param\": ", indent + 2, space);
-		printf("\"");
-		json_print_escaped_str(p->param);
+		fprintf(f, "\",\n%*s\"param\": ", indent + 2, space);
+		fprintf(f, "\"");
+		json_print_escaped_str(f, p->param);
 	}
 	if (p->value && strlen(p->value)) {
-		printf("\",\n%*s\"value\": ", indent + 2, space);
-		printf("\"");
-		json_print_escaped_str(p->value);
+		fprintf(f, "\",\n%*s\"value\": ", indent + 2, space);
+		fprintf(f, "\"");
+		json_print_escaped_str(f, p->value);
 	}
-	printf("\"\n");
-	printf("%*s}", indent, space);
+	fprintf(f, "\"\n");
+	fprintf(f, "%*s}", indent, space);
 }
 
 void
-json_print_component(void *obj, int indent)
+json_print_component(FILE *f, void *obj, int indent)
 {
 	struct component *c = obj;
-	printf("%*s{\n", indent, space);
-	printf("%*s\"name\": \"%s\"", indent + 2, space, c->name);
+	fprintf(f, "%*s{\n", indent, space);
+	fprintf(f, "%*s\"name\": \"%s\"", indent + 2, space, c->name);
 
-	printf(",\n%*s\"prop\": ", indent + 2, space);
-	json_print_list(c->prop, indent, json_print_property);
+	fprintf(f, ",\n%*s\"prop\": ", indent + 2, space);
+	json_print_list(f, c->prop, indent, json_print_property);
 
-	printf(",\n%*s\"components\": ", indent + 2, space);
-	json_print_list(c->comp, indent, json_print_component);
+	fprintf(f, ",\n%*s\"components\": ", indent + 2, space);
+	json_print_list(f, c->comp, indent, json_print_component);
 
-	printf("\n%*s}", indent, space);
+	fprintf(f, "\n%*s}", indent, space);
 }
 
 void
-json_print(struct component *c)
+json_print(FILE *f, struct component *c)
 {
-	printf("[\n");
+	fprintf(f, "[\n");
 	ITERATE(c->comp, x) {
-		json_print_component(current(x), 2);
+		json_print_component(f, current(x), 2);
 	}
-	printf("\n]\n");
+	fprintf(f, "\n]\n");
 }
