@@ -11,30 +11,32 @@
 #define RFC5545_DATETIME_FMT "%Y%m%dT%H%M%S"
 
 // TODO: consider VTIMEZONE component
-const char* parse_rfc5545_time(const char* s, time_t* t) {
-	struct tm broken_time = {0};
+const char *
+parse_rfc5545_time(const char *s, time_t *t)
+{
+	struct tm broken_time = { 0 };
 
-	if (!s || !t) goto errReturn;
+	if (!s || !t)
+		goto errReturn;
 
-	char* ptr = strptime(s, RFC5545_DATETIME_FMT, &broken_time);
+	char *ptr = strptime(s, RFC5545_DATETIME_FMT, &broken_time);
 
-	if (!ptr) goto errReturn;
+	if (!ptr)
+		goto errReturn;
 
 	if (toupper(*ptr) == 'Z') {
-		TRACE_PRINTLN("parse UTC time: %s\n", s);
+		/* TRACE_PRINTLN("parse UTC time: %s\n", s); */
 		++ptr;
 		tzset();
 		*t = mktime(&broken_time) - timezone;
 	} else {
-		TRACE_PRINTLN("parse local time: %s", s);
+		/* TRACE_PRINTLN("parse local time: %s", s); */
 		*t = mktime(&broken_time);
 	}
-
-	while (*ptr != '\0' && (*ptr == ',' || isspace(*ptr))) ++ptr;
 
 	return ptr;
 
 errReturn:
 	*t = -1;
-	return (void*)0;
+	return (void *)0;
 }

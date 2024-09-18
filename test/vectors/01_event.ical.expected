@@ -1,49 +1,47 @@
 [
-    {
-     "name": "VCALENDAR",
-     "prop": [
-         {
-         "name": "PRODID",
-         "param": "",
-         "value": "-//hacksw/handcal//NONSGML v1.0//EN"},
-         {
-         "name": "VERSION",
-         "param": "",
-         "value": "2.0"}
-      ],
-     "components": [
+  {
+    "name": "VCALENDAR",
+    "prop": [
       {
-       "name": "VEVENT",
-       "prop": [
-           {
-           "name": "DESCRIPTION",
-           "param": "",
-           "value": "This is a long description that exists on a long line."},
-           {
-           "name": "SUMMARY",
-           "param": "",
-           "value": "Bastille Day Party"},
-           {
-           "name": "DTEND",
-           "param": "",
-           "value": "19970715T040000Z"},
-           {
-           "name": "DTSTART",
-           "param": "",
-           "value": "19970714T170000Z"},
-           {
-           "name": "DTSTAMP",
-           "param": "",
-           "value": "19970610T172345Z"},
-           {
-           "name": "UID",
-           "param": "",
-           "value": "19970610T172345Z-AF23B2@example.com"}
-        ],
-       "components": [
-        ]
+        "name": "PRODID",
+        "value": "-//hacksw/handcal//NONSGML v1.0//EN"
+      },
+      {
+        "name": "VERSION",
+        "value": "2.0"
       }
-
-      ]
-    }
+    ],
+    "components": [
+      {
+        "name": "VEVENT",
+        "prop": [
+          {
+            "name": "DESCRIPTION",
+            "value": "This is a long description that exists on a long line."
+          },
+          {
+            "name": "SUMMARY",
+            "value": "Bastille Day Party"
+          },
+          {
+            "name": "DTEND",
+            "value": "19970715T040000Z"
+          },
+          {
+            "name": "DTSTART",
+            "value": "19970714T170000Z"
+          },
+          {
+            "name": "DTSTAMP",
+            "value": "19970610T172345Z"
+          },
+          {
+            "name": "UID",
+            "value": "19970610T172345Z-AF23B2@example.com"
+          }
+        ],
+        "components": []
+      }
+    ]
+  }
 ]

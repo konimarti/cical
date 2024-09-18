@@ -282,7 +282,7 @@ main(int argc, char *argv[])
 	parse_icalendar(in_file, top);
 
 	if (json) {
-		print_json(top);
+		json_print(top);
 	}
 
 	component_destroy(top);

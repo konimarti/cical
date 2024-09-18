@@ -3,6 +3,6 @@
 
 struct component;
 
-void print_json(struct component *c);
+void json_print(struct component *c);
 
 #endif
