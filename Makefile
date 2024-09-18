@@ -1,6 +1,7 @@
 VERSION=0.1.0
 CFLAGS?=-g
 MAINFLAGS:=-DVERSION='"$(VERSION)"' -Wall -Wextra -Werror -Wno-unused-parameter
+AUXFLAGS?=-DNDEBUG
 #LDFLAGS+=-static
 INCLUDE+=-Iinclude
 PREFIX?=/usr/local
@@ -19,7 +20,7 @@ OBJECTS=\
 
 $(OUTDIR)/%.o: src/%.c
 	@mkdir -p $(OUTDIR)
-	$(CC) -std=c11 -pedantic -c -o $@ $(CFLAGS) $(MAINFLAGS) $(INCLUDE) $<
+	$(CC) -std=c11 -pedantic -c -o $@ $(CFLAGS) $(MAINFLAGS) $(AUXFLAGS) $(INCLUDE) $<
 
 cical: $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^
@@ -33,21 +34,21 @@ clean:
 	rm -rf $(OUTDIR) cical cical.1
 
 install: all
-	mkdir -p $(DESTDIR)/$(BINDIR) $(DESTDIR)/$(MANDIR)/man1
-	install -m755 cical $(DESTDIR)/$(BINDIR)/cical
-	install -m644 cical.1 $(DESTDIR)/$(MANDIR)/man1/cical.1
+	mkdir -p $(BINDIR) $(MANDIR)/man1
+	install -m755 cical $(BINDIR)/cical
+	install -m644 cical.1 $(MANDIR)/man1/cical.1
 
 uninstall:
-	rm -f $(DESTDIR)/$(BINDIR)/cical
-	rm -f $(DESTDIR)/$(MANDIR)/man1/cical.1
+	rm -f $(BINDIR)/cical
+	rm -f $(MANDIR)/man1/cical.1
 
 check: cical cical.1
 	@find test -perm -111 -exec '{}' \;
 
-tests: cical test/test.sh
+tests: all test/test.sh
 	test/test.sh
 
-memcheck: cical test/test.sh
+memcheck: all test/test.sh
 	TEST_PREFIX="valgrind -s --leak-check=full --error-exitcode=1 --track-origins=yes" test/test.sh
 
 .PHONY: all clean install uninstall check test
