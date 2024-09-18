@@ -27,7 +27,7 @@ do_test() {
 
 for vec in $here/vectors/*.in; do
 	expected=${vec%%.in}.expected
-	tool_bin=$here/../$tool
+	tool_bin=$here/../debug/$tool
 	prefix="$TEST_PREFIX"
 	if ! [ -f "$tool_bin" ]; then
 		tool_bin=$here/$tool

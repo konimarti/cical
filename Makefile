@@ -1,54 +1,95 @@
 VERSION=0.1.0
 CFLAGS?=-g
-MAINFLAGS:=-DVERSION='"$(VERSION)"' -Wall -Wextra -Werror -Wno-unused-parameter
-AUXFLAGS?=-DNDEBUG
-#LDFLAGS+=-static
+MAINFLAGS:=-DVERSION='"$(VERSION)"' -std=c11 -pedantic -Wall -Wextra -Werror -Wno-unused-parameter
 INCLUDE+=-Iinclude
 PREFIX?=/usr/local
 BINDIR?=$(PREFIX)/bin
 MANDIR?=$(PREFIX)/share/man
-OUTDIR=build
 SCDOC=scdoc
 .DEFAULT_GOAL=all
 
-OBJECTS=\
-	$(OUTDIR)/cical.o \
-	$(OUTDIR)/cical_time.o \
-	$(OUTDIR)/cical_list.o \
-	$(OUTDIR)/cical_reader.o \
-	$(OUTDIR)/cical_print_json.o
+#
+# Project files
+#
+SRCDIR=src
+SRCS=\
+	cical.c \
+	cical_time.c \
+	cical_list.c \
+	cical_reader.c \
+	cical_print_json.c
+OBJS=$(SRCS:.c=.o)
+EXE=cical
 
-$(OUTDIR)/%.o: src/%.c
-	@mkdir -p $(OUTDIR)
-	$(CC) -std=c11 -pedantic -c -o $@ $(CFLAGS) $(MAINFLAGS) $(AUXFLAGS) $(INCLUDE) $<
+#
+# Debug build settings
+#
+DBGDIR=debug
+DBGEXE=$(DBGDIR)/$(EXE)
+DBGOBJS=$(addprefix $(DBGDIR)/, $(OBJS))
+DBGCFLAGS=-g $(CFLAGS)
 
-cical: $(OBJECTS)
-	$(CC) $(LDFLAGS) -o $@ $^
+#
+# Release build settings
+#
+RELDIR=build
+RELEXE=$(RELDIR)/$(EXE)
+RELOBJS=$(addprefix $(RELDIR)/, $(OBJS))
+RELCFLAGS=-DNDEBUG $(CFLAGS)
 
+#
+# Default build
+#
+all: release
+
+#
+# Debug rules
+#
+debug: $(DBGEXE) cical.1
+
+$(DBGEXE): $(DBGOBJS)
+	$(CC) $(DBGCFLAGS) $(MAINFLAGS) $(LDFLAGS) -o $@ $^
+
+$(DBGDIR)/%.o: $(SRCDIR)/%.c
+	@mkdir -p $(DBGDIR)
+	$(CC) -c $(DBGCFLAGS) $(MAINFLAGS) $(INCLUDE) -o $@ $<
+
+#
+# Release rules
+#
+release: $(RELEXE) cical.1
+
+$(RELEXE): $(RELOBJS)
+	$(CC) $(RELCFLAGS) $(MAINFLAGS) $(LDFLAGS) -o $@ $^
+
+$(RELDIR)/%.o: $(SRCDIR)/%.c
+	@mkdir -p $(RELDIR)
+	$(CC) -c $(RELCFLAGS) $(MAINFLAGS) $(INCLUDE) -o $@ $<
+
+#
+# Other rules
+#
 cical.1: doc/cical.1.scd
 	$(SCDOC) < $< > $@
 
-all: cical cical.1
-
 clean:
-	rm -rf $(OUTDIR) cical cical.1
+	rm -rf $(RELDIR) $(DBGDIR)
+
+remake: clean all
 
 install: all
 	mkdir -p $(BINDIR) $(MANDIR)/man1
-	install -m755 cical $(BINDIR)/cical
+	install -m755 $(RELDIR)/cical $(BINDIR)/cical
 	install -m644 cical.1 $(MANDIR)/man1/cical.1
 
 uninstall:
 	rm -f $(BINDIR)/cical
 	rm -f $(MANDIR)/man1/cical.1
 
-check: cical cical.1
-	@find test -perm -111 -exec '{}' \;
-
-tests: all test/test.sh
+tests: debug
 	test/test.sh
 
-memcheck: all test/test.sh
+memcheck: debug
 	TEST_PREFIX="valgrind -s --leak-check=full --error-exitcode=1 --track-origins=yes" test/test.sh
 
-.PHONY: all clean install uninstall check test
+.PHONY: all clean remake install uninstall test debug release
