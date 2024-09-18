@@ -110,23 +110,26 @@ component_property_add(struct component *c, struct property *p)
 }
 
 /*
- * Reads until a character in stop is encountered. Does not stop inside of
- * a quoted string.
+ * Reads until a character in the stop chars or the string end is encountered.
+ * Stop chars are ignored in a quoted string.
+ *
+ * Returns the position in the string at a stopped char or at 0.
  *
  */
-char *
+static char *
 read_until(char *s, char *stop)
 {
-	int quotes = 0;
-	while (*s && (!strchr(stop, *s) || quotes % 2 == 1)) {
-		if (*s == '"')
-			quotes++;
+	bool in_quotes = false;
+	while (*s && (!strchr(stop, *s) || in_quotes)) {
+		if (*s == '"') {
+			in_quotes = !in_quotes;
+		}
 		s++;
 	}
 	return s;
 }
 
-char *
+static char *
 read_part(char const *const s, size_t l)
 {
 	char *ret = malloc((l + 1) * sizeof(*ret));
@@ -135,16 +138,25 @@ read_part(char const *const s, size_t l)
 	return ret;
 }
 
+/*
+ * Parses a contentline according to RFC 5545, section 3.1 with the following
+ * grammar:
+ *
+ * contentline   = name *(";" param ) ":" value CRLF
+ *
+ */
 struct property *
 property_parse(char *const s)
 {
-	char *name, *param, *value;
 	char *start, *end;
+	char *name, *param, *value;
+
+	name = param = value = 0;
 
 	/* read property name */
 	start = s;
 	end = read_until(start, ":;");
-	if (end == 0) {
+	if (end == start) {
 		fprintf(stderr, "property_parse fail: invalid name\n");
 		goto error;
 	}
@@ -154,7 +166,7 @@ property_parse(char *const s)
 	if (*end == ';') {
 		start = ++end;
 		end = read_until(start, ":");
-		if (end == 0) {
+		if (end == start) {
 			fprintf(stderr, "property_parse fail: invalid param\n");
 			goto error;
 		}
@@ -175,6 +187,9 @@ property_parse(char *const s)
 	return property_create(name, param, value);
 
 error:
+	free(name);
+	free(param);
+	free(value);
 	fprintf(stderr, "invalid contentline: %s", s);
 	return 0;
 }
@@ -196,8 +211,9 @@ parse_component(struct reader *r, struct component *top)
 			break;
 		} else {
 			p = property_parse(buf);
-			if (p)
+			if (p) {
 				component_property_add(top, p);
+			}
 		}
 	}
 }
