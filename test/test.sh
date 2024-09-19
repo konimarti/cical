@@ -6,13 +6,13 @@ here=$(dirname $0)
 fail=0
 
 tool="cical"
-tool_opts="-j"
 
 do_test() {
-	preifx="$1"
+	prefix="$1"
 	tool_bin="$2"
-	vec="$3"
-	expected="$4"
+	tool_opts="$3"
+	vec="$4"
+	expected="$5"
 	tmp=$(mktemp)
 	status=0
 	$prefix $tool_bin $tool_opts < $vec > $tmp || status=$?
@@ -28,11 +28,12 @@ do_test() {
 for vec in $here/vectors/*.in; do
 	expected=${vec%%.in}.expected
 	tool_bin=$here/../debug/$tool
+	tool_opts=-$(basename $vec | cut -d '.' -f 2)
 	prefix="$TEST_PREFIX"
 	if ! [ -f "$tool_bin" ]; then
 		tool_bin=$here/$tool
 	fi
-	do_test "$prefix" "$tool_bin" "$vec" "$expected"
+	do_test "$prefix" "$tool_bin" "$tool_opts" "$vec" "$expected"
 done
 
 exit $fail

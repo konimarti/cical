@@ -1,0 +1,30 @@
+# VCALENDAR
+
+- *PRODID*
+  - -//hacksw/handcal//NONSGML v1.0//EN
+
+- *VERSION*
+  - 2.0
+
+## VEVENT
+
+- *DESCRIPTION*
+  - This is a long description that exists on a long line.
+
+- *SUMMARY*
+  - Bastille Day Party
+
+- *DTEND*
+  - 19970715T040000Z
+
+- *DTSTART*
+  - 19970714T170000Z
+
+- *DTSTAMP*
+  - 19970610T172345Z
+
+- *UID*
+  - 19970610T172345Z-AF23B2@example.com
+
+
+
