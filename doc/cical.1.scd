@@ -2,13 +2,14 @@ CICAL(7)
 
 # NAME
 
-cical - a iCalendar object parser
+cical - an iCalendar object parser
 
 # SYNOPSIS
 
-Parse iCalendar streams.
+*cical* [*-h*] [*-v*] [*-j* | *-m*] [*-i* _<file>_] [*-o* _<file>_]
 
-*cical* [*-h*] [*-v*] [*-j*] [*-f* _<file>_]
+*cical*(7) parses any iCalendar object stream which can then be converted to
+either the JSON or Markdown format.
 
 # OPTIONS
 
@@ -19,10 +20,16 @@ Parse iCalendar streams.
 	Show version.
 
 *-j*
-	Print parsed iCalendar in json format.
+	Print parsed iCalendar in JSON format.
 
-*-f FILE*
+*-m*
+	Print parsed iCalendar in Markdown format.
+
+*-i FILE*
 	Read input from filename (default: stdin).
+
+*-o FILE*
+	Write output to filename (default: stdout).
 
 # AUTHOR
 
