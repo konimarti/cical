@@ -87,6 +87,9 @@ uninstall:
 	rm -f $(BINDIR)/cical
 	rm -f $(MANDIR)/man1/cical.1
 
+tags: all
+	ctags -R
+
 tests: debug
 	test/test.sh
 
