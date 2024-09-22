@@ -49,3 +49,4 @@ build/
 cical
 *.1
 tags
+.ccls-*
