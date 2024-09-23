@@ -12,9 +12,9 @@
 /*
  *
  * TODOs for better markdown rendering:
- * [ ] render links with [..](..)
- * [ ] render mailto: addresses as <..>
- * [ ] render timestamps in human readable form
+ * [x] render links with [..](..)
+ * [x] render mailto: addresses as <..>
+ * [x] render timestamps in human readable form
  * [ ] line breaks at 80
  *
  */
@@ -54,13 +54,34 @@ link_handler(FILE *f, char *s)
 	fprintf(f, "[link](%s)", s);
 }
 
+static void
+time_handler(FILE *f, char *s)
+{
+	time_t t = 0;
+	if (parse_rfc5545_time(s, &t) != 0) {
+		char *tstr = ctime(&t);
+		tstr[strlen(tstr) - 1] = '\0';
+		fprintf(f, "%s", tstr);
+	} else {
+		fprintf(f, "%s", s);
+	}
+}
+
+enum cical_cmp_prefix_type { CICAL_CMP_PROP_NAME, CICAL_CMP_PROP_VALUE };
+
 struct {
+	enum cical_cmp_prefix_type type;
 	char *prefix;
 	handle_prefix handler;
 } value_prefix[] = {
-	{ "mailto:", mailto_handler },
-	{ "http:", link_handler },
-	{ "https:", link_handler },
+	{ CICAL_CMP_PROP_NAME, "DTSTART", time_handler },
+	{ CICAL_CMP_PROP_NAME, "DTEND", time_handler },
+	{ CICAL_CMP_PROP_NAME, "DUE", time_handler },
+	{ CICAL_CMP_PROP_NAME, "TRIGGER", time_handler },
+	{ CICAL_CMP_PROP_NAME, "DTSTAMP", time_handler },
+	{ CICAL_CMP_PROP_VALUE, "mailto:", mailto_handler },
+	{ CICAL_CMP_PROP_VALUE, "http:", link_handler },
+	{ CICAL_CMP_PROP_VALUE, "https:", link_handler },
 };
 
 /* static const char *const time_prefix = "DT"; */
@@ -68,31 +89,28 @@ struct {
 static void
 markdown_print_property_value(FILE *f, struct property p[static 1], int indent)
 {
+	char *cmp;
 	/* check for certain prefixes */
 	size_t value_len = strlen(p->value);
-	for (size_t i = 0; i < 3 /*FIXME: magic nr*/; i++) {
+	size_t n = sizeof(value_prefix) / sizeof(value_prefix[0]);
+	for (size_t i = 0; i < n; i++) {
 		size_t len = strlen(value_prefix[i].prefix);
 		if (value_len < len) {
 			continue;
 		}
-		if (strncasecmp(p->value, value_prefix[i].prefix, len) == 0) {
+		if (value_prefix[i].type == CICAL_CMP_PROP_NAME) {
+			cmp = p->name;
+		} else if (value_prefix[i].type == CICAL_CMP_PROP_NAME) {
+			cmp = p->value;
+		} else {
+			/* unreachable */
+			break;
+		}
+		if (strncasecmp(cmp, value_prefix[i].prefix, len) == 0) {
 			value_prefix[i].handler(f, p->value);
 			return;
 		}
 	}
-
-	/* check for certain prefixes */
-	/* TODO: check time implementation
-	size_t name_len = strlen(p->name);
-	if (name_len > strlen(time_prefix)
-		&& strncasecmp(p->name, time_prefix, strlen(time_prefix))) {
-		time_t t = 0;
-		if (parse_rfc5545_time(p->value, &t) != 0) {
-			fprintf(f, "%s", ctime(&t));
-			return;
-		}
-	}
-	*/
 
 	/* at this point, we just print the value */
 	fprintf(f, "%s", p->value);
