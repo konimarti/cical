@@ -23,7 +23,7 @@ version()
 static void
 usage(void)
 {
-	puts("usage: cical [-h|-v] [-j] [-i FILE] [-o FILE]");
+	puts("usage: cical [-h|-v] [-j|-m] [-i FILE] [-o FILE]");
 	puts("");
 	puts("Parse iCalendar streams.");
 	puts("");

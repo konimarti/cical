@@ -4,6 +4,12 @@
 [warn] --jsx-bracket-same-line is deprecated.
 [warn] Ignored unknown option --loglevel=error. Did you mean --log-level?
 [warn] Ignored unknown option --stdin.
+[warn] --jsx-bracket-same-line is deprecated.
+[warn] Ignored unknown option --loglevel=error. Did you mean --log-level?
+[warn] Ignored unknown option --stdin.
+[warn] --jsx-bracket-same-line is deprecated.
+[warn] Ignored unknown option --loglevel=error. Did you mean --log-level?
+[warn] Ignored unknown option --stdin.
 
 # cical
 
@@ -15,7 +21,8 @@ This is still work-in-progress.
 ## Usage
 
 ```
-usage: cical [-h|-v] [-j] [-i FILE] [-o FILE]
+
+usage: cical [-h|-v] [-j|-m] [-i FILE] [-o FILE]
 
 Parse iCalendar streams.
 
