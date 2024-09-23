@@ -2,6 +2,21 @@
 
 set -e
 
+usage() { echo "Usage: $0 [-g]" 1>&2; exit 1; }
+
+generate=0
+while getopts "g" o; do
+    case "${o}" in
+        g)
+            generate=1
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
 here=$(dirname $0)
 fail=0
 
@@ -15,6 +30,10 @@ do_test() {
 	expected="$5"
 	tmp=$(mktemp)
 	status=0
+	if [ "$generate" -eq 1 ]; then
+		$prefix $tool_bin $tool_opts < $vec > $expected
+		return
+	fi
 	$prefix $tool_bin $tool_opts < $vec > $tmp || status=$?
 	if [ $status -eq 0 ] && diff -u "$expected" "$tmp"; then
 		echo "ok      $tool < $vec > $tmp"
