@@ -33,16 +33,31 @@ markdown_print_list(FILE *f, struct list *l, int indent, printer fn)
 }
 
 static void
+markdown_print_indented_char(FILE *f, void *obj, int indent)
+{
+	char *p = obj;
+	fprintf(f, "    - %s", p);
+}
+
+static void
+markdown_print_params(FILE *f, void *obj, int indent)
+{
+	struct param *p = obj;
+	fprintf(f, "  - *%s*\n", p->name);
+	markdown_print_list(f, p->values, indent, markdown_print_indented_char);
+	fprintf(f, "\n");
+}
+
+static void
 markdown_print_property(FILE *f, void *obj, int indent)
 {
 	struct property *p = obj;
-	fprintf(f, "- *%s*\n", p->name);
-	if (p->param && strlen(p->param)) {
-		fprintf(f, "  - %s\n", p->param);
-	}
 	if (p->value && strlen(p->value)) {
-		fprintf(f, "  - %s\n", p->value);
+		fprintf(f, "- *%s*: %s\n", p->name, p->value);
+	} else {
+		fprintf(f, "- *%s*\n", p->name);
 	}
+	markdown_print_list(f, p->params, indent + 4, markdown_print_params);
 	fprintf(f, "\n");
 }
 

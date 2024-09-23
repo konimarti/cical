@@ -36,8 +36,33 @@ usage(void)
 	puts("  -o FILE  write to filename (default stdout)");
 }
 
+struct param *
+param_create()
+{
+	struct param *p = malloc(sizeof(*p));
+	if (!p) {
+		perror("failed to allocate property memory");
+		exit(EXIT_FAILURE);
+	}
+
+	p->name = 0;
+	p->values = list_create();
+	return p;
+}
+
+void
+param_destroy(void *arg)
+{
+	struct param *p = arg;
+	if (!p)
+		return;
+	free(p->name);
+	list_destroy(p->values, free);
+	free(p);
+}
+
 struct property *
-property_create(char *const name, char *const param, char *const value)
+property_create(char *const name, struct list *const params, char *const value)
 {
 	struct property *p = malloc(sizeof(*p));
 	if (!p) {
@@ -46,7 +71,7 @@ property_create(char *const name, char *const param, char *const value)
 	}
 
 	p->name = name;
-	p->param = param;
+	p->params = params;
 	p->value = value;
 	return p;
 }
@@ -59,7 +84,7 @@ property_destroy(void *arg)
 		return;
 	}
 	free(p->name);
-	free(p->param);
+	list_destroy(p->params, param_destroy);
 	free(p->value);
 	free(p);
 }
@@ -151,9 +176,14 @@ struct property *
 property_parse(char *const s)
 {
 	char *start, *end;
-	char *name, *param, *value;
+	char *name, *value;
 
-	name = param = value = 0;
+	struct list *params;
+	struct param *p;
+
+	name = 0;
+	params = 0;
+	value = 0;
 
 	/* read property name */
 	start = s;
@@ -165,16 +195,45 @@ property_parse(char *const s)
 	name = read_part(start, (size_t)(end - start));
 
 	/* read parameter list */
+	params = list_create();
 	if (*end == ';') {
 		start = ++end;
-		end = read_until(start, ":");
-		if (end == start) {
-			fprintf(stderr, "property_parse fail: invalid param\n");
-			goto error;
-		}
-		param = read_part(start, (size_t)(end - start));
-	} else {
-		param = read_part(0, 0);
+		do {
+			p = param_create();
+			end = read_until(start, "=");
+			if (*end != '=') {
+				fprintf(stderr,
+					"property_parse fail: "
+					"invalid param-name: "
+					"expected '=' but got '%c'\n",
+					*end);
+				goto error;
+			}
+			p->name = read_part(start, (size_t)(end - start));
+			TRACE_PRINTLN(
+				"param-name: %.*s", (int)(end - start), start);
+
+			do {
+				start = ++end;
+				end = read_until(start, ",:;");
+				if (end == start) {
+					fprintf(stderr,
+						"property_parse fail: "
+						"invalid param-value\n");
+					goto error;
+				}
+				list_add(p->values,
+					read_part(
+						start, (size_t)(end - start)));
+				TRACE_PRINTLN("param-value: %.*s",
+					(int)(end - start),
+					start);
+
+			} while (*end && *end == ',');
+
+			list_add(params, p);
+
+		} while (*end && *end == ';');
 	}
 
 	/* read value */
@@ -186,11 +245,11 @@ property_parse(char *const s)
 	}
 	value = read_part(end, strlen(end));
 
-	return property_create(name, param, value);
+	return property_create(name, params, value);
 
 error:
 	free(name);
-	free(param);
+	list_destroy(params, param_destroy);
 	free(value);
 	fprintf(stderr, "invalid contentline: %s", s);
 	return 0;

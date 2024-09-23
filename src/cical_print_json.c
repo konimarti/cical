@@ -55,6 +55,31 @@ json_print_list(FILE *f, struct list *l, int indent, printer fn)
 }
 
 static void
+json_print_indented_string(FILE *f, void *obj, int indent)
+{
+	char *p = obj;
+	fprintf(f, "%*s", indent, space);
+	fprintf(f, "\"");
+	json_print_escaped_str(f, p);
+	fprintf(f, "\"");
+}
+
+static void
+json_print_params(FILE *f, void *obj, int indent)
+{
+	struct param *p = obj;
+
+	fprintf(f, "%*s{\n", indent, space);
+	fprintf(f, "%*s\"name\": \"", indent + 2, space);
+	json_print_escaped_str(f, p->name);
+	fprintf(f, "\",\n");
+	fprintf(f, "%*s\"values\": ", indent + 2, space);
+	json_print_list(f, p->values, indent + 4, json_print_indented_string);
+
+	fprintf(f, "\n%*s}", indent, space);
+}
+
+static void
 json_print_property(FILE *f, void *obj, int indent)
 {
 	struct property *p = obj;
@@ -62,13 +87,12 @@ json_print_property(FILE *f, void *obj, int indent)
 	fprintf(f, "%*s\"name\": ", indent + 2, space);
 	fprintf(f, "\"");
 	json_print_escaped_str(f, p->name);
-	if (p->param && strlen(p->param)) {
-		fprintf(f, "\",\n%*s\"param\": ", indent + 2, space);
-		fprintf(f, "\"");
-		json_print_escaped_str(f, p->param);
-	}
+
+	fprintf(f, "\",\n%*s\"params\": ", indent + 2, space);
+	json_print_list(f, p->params, indent + 4, json_print_params);
+
 	if (p->value && strlen(p->value)) {
-		fprintf(f, "\",\n%*s\"value\": ", indent + 2, space);
+		fprintf(f, ",\n%*s\"value\": ", indent + 2, space);
 		fprintf(f, "\"");
 		json_print_escaped_str(f, p->value);
 	}
