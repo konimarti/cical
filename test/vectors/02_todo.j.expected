@@ -4,10 +4,12 @@
     "prop": [
       {
         "name": "PRODID",
+        "params": [],
         "value": "-//ABC Corporation//NONSGML My Product//EN"
       },
       {
         "name": "VERSION",
+        "params": [],
         "value": "2.0"
       }
     ],
@@ -17,40 +19,61 @@
         "prop": [
           {
             "name": "DESCRIPTION",
-            "param": "ALTREP=\"cid:part1.0001@example.org\"",
+            "params": [
+                  {
+                    "name": "ALTREP",
+                    "values": [
+                          "\"cid:part1.0001@example.org\""
+                        ]
+                  }
+                ],
             "value": "The Fall'98 Wild Wizards Conference - - Las Vegas\\, NV\\, USA"
           },
           {
             "name": "SUMMARY",
+            "params": [],
             "value": "Submit Income Taxes"
           },
           {
             "name": "STATUS",
+            "params": [],
             "value": "NEEDS-ACTION"
           },
           {
             "name": "DUE",
+            "params": [],
             "value": "19980415T000000"
           },
           {
             "name": "ATTENDEE",
-            "param": "PARTSTAT=ACCEPTED",
+            "params": [
+                  {
+                    "name": "PARTSTAT",
+                    "values": [
+                          "ACCEPTED"
+                        ]
+                  }
+                ],
             "value": "mailto:jqpublic@example.com"
           },
           {
             "name": "ORGANIZER",
+            "params": [],
             "value": "mailto:unclesam@example.com"
           },
           {
             "name": "UID",
+            "params": [],
             "value": "uid4@example.com"
           },
           {
             "name": "SEQUENCE",
+            "params": [],
             "value": "2"
           },
           {
             "name": "DTSTAMP",
+            "params": [],
             "value": "19980130T134500Z"
           }
         ],
@@ -60,23 +83,34 @@
             "prop": [
               {
                 "name": "DURATION",
+                "params": [],
                 "value": "PT1H"
               },
               {
                 "name": "REPEAT",
+                "params": [],
                 "value": "4"
               },
               {
                 "name": "ATTACH",
-                "param": "FMTTYPE=audio/basic",
+                "params": [
+                      {
+                        "name": "FMTTYPE",
+                        "values": [
+                              "audio/basic"
+                            ]
+                      }
+                    ],
                 "value": "http://example.com/pub/audio-files/ssbanner.aud"
               },
               {
                 "name": "TRIGGER",
+                "params": [],
                 "value": "19980403T120000Z"
               },
               {
                 "name": "ACTION",
+                "params": [],
                 "value": "AUDIO"
               }
             ],

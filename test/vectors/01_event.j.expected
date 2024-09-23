@@ -4,10 +4,12 @@
     "prop": [
       {
         "name": "PRODID",
+        "params": [],
         "value": "-//hacksw/handcal//NONSGML v1.0//EN"
       },
       {
         "name": "VERSION",
+        "params": [],
         "value": "2.0"
       }
     ],
@@ -17,26 +19,32 @@
         "prop": [
           {
             "name": "DESCRIPTION",
+            "params": [],
             "value": "This is a long description that exists on a long line."
           },
           {
             "name": "SUMMARY",
+            "params": [],
             "value": "Bastille Day Party"
           },
           {
             "name": "DTEND",
+            "params": [],
             "value": "19970715T040000Z"
           },
           {
             "name": "DTSTART",
+            "params": [],
             "value": "19970714T170000Z"
           },
           {
             "name": "DTSTAMP",
+            "params": [],
             "value": "19970610T172345Z"
           },
           {
             "name": "UID",
+            "params": [],
             "value": "19970610T172345Z-AF23B2@example.com"
           }
         ],
