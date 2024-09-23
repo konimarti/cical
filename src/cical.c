@@ -157,8 +157,12 @@ read_until(char *s, char *stop)
 }
 
 static char *
-read_part(char const *const s, size_t l)
+read_part(char const *s, size_t l)
 {
+	if (s[0] == '"' && s[l - 1] == '"') {
+		s += 1;
+		l -= 2;
+	}
 	char *ret = malloc((l + 1) * sizeof(*ret));
 	memcpy(ret, s, l);
 	ret[l] = '\0';

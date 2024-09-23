@@ -23,7 +23,7 @@
                   {
                     "name": "ALTREP",
                     "values": [
-                          "\"cid:part1.0001@example.org\""
+                          "cid:part1.0001@example.org"
                         ]
                   }
                 ],
